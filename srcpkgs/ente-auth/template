@@ -1,0 +1,43 @@
+# Template file for 'ente-auth'
+pkgname=ente-auth
+version=4.4.15
+revision=1
+only_for_archs="x86_64"
+hostmakedepends="tar"
+depends="gtk+3 libsecret hicolor-icon-theme desktop-file-utils"
+short_desc="Open source 2FA authenticator with end-to-end encrypted backups"
+maintainer="rich@bandaholics.cash"
+license="AGPL-3.0-only"
+homepage="https://ente.io/auth/"
+changelog="https://github.com/ente-io/ente/releases"
+distfiles="https://github.com/ente-io/ente/releases/download/auth-v${version}/ente-auth-v${version}-x86_64.deb"
+checksum=89fd2f93895c233f9c270dff7eff46a7f38504eee8e7829d4d48653a72d8a2fa
+nostrip=yes
+
+do_extract() {
+	ar x ${XBPS_SRCDISTDIR}/${pkgname}-${version}/ente-auth-v${version}-x86_64.deb
+}
+
+do_install() {
+	bsdtar xf data.tar.zst
+
+	# Install app to /opt
+	vmkdir opt/ente-auth
+	vcopy usr/share/enteauth/* opt/ente-auth/
+
+	# Symlink binary
+	vmkdir usr/bin
+	ln -sf /opt/ente-auth/enteauth ${DESTDIR}/usr/bin/enteauth
+
+	# Desktop file
+	vinstall usr/share/applications/enteauth.desktop 0644 usr/share/applications
+
+	# Icons
+	for size in 128 256; do
+		vinstall usr/share/icons/hicolor/${size}x${size}/apps/enteauth.png 0644 \
+			usr/share/icons/hicolor/${size}x${size}/apps
+	done
+
+	# Appdata
+	vinstall usr/share/metainfo/enteauth.appdata.xml 0644 usr/share/metainfo
+}
