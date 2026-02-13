@@ -206,29 +206,44 @@ jobs:
               exit 0
           fi
 
-          buildable=""
-          unsupported=""
-          for pkg in $changed; do
-              tpl="srcpkgs/${pkg}/template"
-              if [ ! -f "$tpl" ]; then
-                  echo "!! missing template for ${pkg}, skipping"
-                  continue
-              fi
+          parse_tpl_var() {
+              key="$1"
+              file="$2"
+              awk -v key="$key" '
+                  $0 ~ "^[[:space:]]*" key "=" {
+                      line=$0
+                      sub("^[[:space:]]*" key "=", "", line)
+                      sub("[[:space:]]*#.*$", "", line)
+                      if (line ~ /^"/) {
+                          sub(/^"/, "", line)
+                          sub(/".*$/, "", line)
+                          print line
+                          exit
+                      }
+                      if (line ~ /^'\''/) {
+                          sub(/^'\''/, "", line)
+                          sub(/'\''.*/, "", line)
+                          print line
+                          exit
+                      }
+                      gsub(/^[[:space:]]+|[[:space:]]+$/, "", line)
+                      print line
+                      exit
+                  }
+              ' "$file"
+          }
 
-              arch_spec="$(sed -n 's/^archs=\"\\(.*\\)\"/\\1/p' "$tpl" | head -n1)"
-              if [ -z "$arch_spec" ]; then
-                  buildable="$buildable $pkg"
-                  continue
-              fi
+          arch_matches_list() {
+              list="$1"
+              [ -z "$list" ] && return 0
 
-              supported=0
+              matched=0
               blocked=0
-              # Treat arch tokens as patterns (e.g. x86_64*) instead of filesystem globs.
               set -f
-              for token in $arch_spec; do
+              for token in $list; do
                   case "$token" in
                       noarch)
-                          supported=1
+                          matched=1
                           ;;
                       !*)
                           pat="${token#!}"
@@ -238,22 +253,42 @@ jobs:
                           ;;
                       *)
                           case "$ARCH" in
-                              $token) supported=1 ;;
+                              $token) matched=1 ;;
                           esac
                           ;;
                   esac
               done
               set +f
 
-              if [ "$blocked" -eq 1 ]; then
-                  supported=0
+              [ "$blocked" -eq 1 ] && return 1
+              [ "$matched" -eq 1 ]
+          }
+
+          buildable=""
+          unsupported=""
+          for pkg in $changed; do
+              tpl="srcpkgs/${pkg}/template"
+              if [ ! -f "$tpl" ]; then
+                  echo "!! missing template for ${pkg}, skipping"
+                  continue
               fi
 
-              if [ "$supported" -eq 1 ]; then
-                  buildable="$buildable $pkg"
-              else
+              only_for_archs="$(parse_tpl_var only_for_archs "$tpl")"
+              arch_spec="$(parse_tpl_var archs "$tpl")"
+
+              if [ -n "$only_for_archs" ] && ! arch_matches_list "$only_for_archs"; then
+                  echo "   skip ${pkg}: ARCH=${ARCH} not allowed by only_for_archs=\"${only_for_archs}\""
                   unsupported="$unsupported $pkg"
+                  continue
               fi
+
+              if [ -n "$arch_spec" ] && ! arch_matches_list "$arch_spec"; then
+                  echo "   skip ${pkg}: ARCH=${ARCH} not allowed by archs=\"${arch_spec}\""
+                  unsupported="$unsupported $pkg"
+                  continue
+              fi
+
+              buildable="$buildable $pkg"
           done
 
           buildable="${buildable#" "}"
