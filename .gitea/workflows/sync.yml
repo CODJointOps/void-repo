@@ -1,0 +1,90 @@
+name: sync
+
+on:
+  schedule:
+    - cron: '10 12 * * *'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    name: Sync package templates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.ACCESS_GIT }}
+
+      - name: Sync templates from package repos
+        env:
+          ACCESS_GIT: ${{ secrets.ACCESS_GIT }}
+        run: |
+          set -e
+          changed=false
+          managed_file=$(mktemp)
+          trap 'rm -f "$managed_file"' EXIT
+
+          while IFS=' ' read -r pkgname repo_url; do
+              [ -z "$pkgname" ] && continue
+              case "$pkgname" in
+                  \#*) continue ;;
+              esac
+
+              printf '%s\n' "$pkgname" >> "$managed_file"
+
+              echo "==> Syncing $pkgname from $repo_url"
+              tmpdir=$(mktemp -d)
+              git clone --depth 1 "$repo_url" "$tmpdir"
+
+              # Source repos have template+files at root, not under srcpkgs/
+              srcdir="$tmpdir"
+              if [ -d "$tmpdir/srcpkgs/$pkgname" ]; then
+                  srcdir="$tmpdir/srcpkgs/$pkgname"
+              elif [ ! -f "$tmpdir/template" ]; then
+                  echo "   WARNING: no template found in $repo_url, skipping"
+                  rm -rf "$tmpdir"
+                  continue
+              fi
+
+              mkdir -p "srcpkgs/$pkgname"
+
+              if diff -rq --exclude='.git' --exclude='.gitea' --exclude='README.md' "$srcdir/" "srcpkgs/$pkgname/" >/dev/null 2>&1; then
+                  echo "   No changes for $pkgname"
+              else
+                  rm -rf "srcpkgs/$pkgname"
+                  mkdir -p "srcpkgs/$pkgname"
+                  # Copy only package-relevant files (template, files/, patches/)
+                  cp -r "$srcdir/template" "srcpkgs/$pkgname/"
+                  [ -d "$srcdir/files" ] && cp -r "$srcdir/files" "srcpkgs/$pkgname/"
+                  [ -d "$srcdir/patches" ] && cp -r "$srcdir/patches" "srcpkgs/$pkgname/"
+                  echo "   Updated $pkgname"
+                  changed=true
+              fi
+
+              rm -rf "$tmpdir"
+          done < packages.conf
+
+          # Remove packages no longer declared in packages.conf.
+          for d in srcpkgs/*; do
+              [ -d "$d" ] || continue
+              pkg="$(basename "$d")"
+              if ! grep -Fqx "$pkg" "$managed_file"; then
+                  rm -rf "$d"
+                  echo "   Removed stale package dir: $pkg"
+                  changed=true
+              fi
+          done
+
+          if [ "$changed" = true ]; then
+              git config user.name "gitea-actions[bot]"
+              git config user.email "gitea-actions[bot]@noreply.deadzone.lol"
+              git add srcpkgs/
+              if ! git diff --cached --quiet; then
+                  git commit -m "sync: update package templates"
+                  git push
+              else
+                  echo "Nothing to commit after staging"
+              fi
+          else
+              echo "All packages up to date, nothing to push"
+          fi
