@@ -575,6 +575,25 @@ jobs:
 
           commit_count=0
 
+          push_with_retry() {
+              pushed=0
+              for attempt in 1 2 3; do
+                  if git push "$REMOTE" "$BRANCH"; then
+                      pushed=1
+                      break
+                  fi
+                  if [ "$attempt" -lt 3 ]; then
+                      delay=$((attempt * 15))
+                      echo "Push failed (attempt ${attempt}/3), retrying in ${delay}s..."
+                      sleep "$delay"
+                  fi
+              done
+              if [ "$pushed" -ne 1 ]; then
+                  echo "Push failed after 3 attempts."
+                  return 1
+              fi
+          }
+
           # Create one commit per changed package binary for easier history/debugging.
           for f in ./*.xbps; do
               [ -e "$f" ] || continue
@@ -600,6 +619,9 @@ jobs:
                   git commit -m "binpkg(${RESULT_NAME}): update ${base%.xbps}"
               fi
               commit_count=$((commit_count + 1))
+
+              # Push each package commit immediately to keep LFS uploads smaller.
+              push_with_retry
           done
 
           # Commit repository metadata and any non-binary leftovers.
@@ -607,27 +629,10 @@ jobs:
           if ! git diff --cached --quiet; then
               git commit -m "binpkg(${RESULT_NAME}): refresh metadata"
               commit_count=$((commit_count + 1))
+              push_with_retry
           fi
 
           if [ "$commit_count" -eq 0 ]; then
               echo "No changes to push."
               exit 0
-          fi
-
-          pushed=0
-          for attempt in 1 2 3; do
-              if git push "$REMOTE" "$BRANCH"; then
-                  pushed=1
-                  break
-              fi
-              if [ "$attempt" -lt 3 ]; then
-                  delay=$((attempt * 15))
-                  echo "Push failed (attempt ${attempt}/3), retrying in ${delay}s..."
-                  sleep "$delay"
-              fi
-          done
-
-          if [ "$pushed" -ne 1 ]; then
-              echo "Push failed after 3 attempts."
-              exit 1
           fi
