@@ -171,12 +171,11 @@ jobs:
                               base="$(basename "$f")"
                               pkgver="$(xbps-uhelper binpkgver "$base" 2>/dev/null || true)"
                               pkgname="$(xbps-uhelper getpkgname "$pkgver" 2>/dev/null || true)"
-                              [ -n "$pkgname" ] && repo_pkgs="$repo_pkgs
-$pkgname"
+                              [ -n "$pkgname" ] && repo_pkgs="$repo_pkgs $pkgname"
                               ;;
                       esac
                   done
-                  repo_pkgs="$(printf '%s\n' "$repo_pkgs" | sed '/^$/d' | sort -u)"
+                  repo_pkgs="$(printf '%s\n' "$repo_pkgs" | tr ' ' '\n' | sed '/^$/d' | sort -u)"
                   for pkg in $all_pkgs; do
                       if ! printf '%s\n' "$repo_pkgs" | grep -Fqx "$pkg"; then
                           missing_pkgs="$missing_pkgs $pkg"
