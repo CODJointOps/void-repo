@@ -24,6 +24,18 @@ echo "repository=https://git.deadzone.lol/Wizzard/void-repo/media/branch/reposit
 sudo xbps-install -S
 ```
 
+### GitHub Mirror
+
+```bash
+ARCH="$(xbps-uhelper arch)"; echo "repository=https://raw.githubusercontent.com/CODJointOps/void-repo/repository-${ARCH}" | sudo tee /etc/xbps.d/20-void-repo.conf
+sudo xbps-install -S
+```
+
+```fish
+echo "repository=https://raw.githubusercontent.com/CODJointOps/void-repo/repository-(xbps-uhelper arch)" | sudo tee /etc/xbps.d/20-void-repo.conf
+sudo xbps-install -S
+```
+
 Install whatever you want after that:
 
 ```bash
