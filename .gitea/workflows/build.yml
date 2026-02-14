@@ -164,9 +164,21 @@ jobs:
               if git fetch --no-tags --depth 1 "$REMOTE_PUBLIC" "$BRANCH:$BRANCH_REF" >/dev/null 2>&1 || \
                  git fetch --no-tags --depth 1 "$REMOTE_AUTH" "$BRANCH:$BRANCH_REF" >/dev/null 2>&1; then
                   repo_files="$(git ls-tree -r --name-only "$BRANCH_REF" || true)"
+                  repo_pkgs=""
+                  for f in $repo_files; do
+                      case "$f" in
+                          *.${RESULT_NAME}.xbps|*.noarch.xbps)
+                              base="$(basename "$f")"
+                              pkgver="$(xbps-uhelper binpkgver "$base" 2>/dev/null || true)"
+                              pkgname="$(xbps-uhelper getpkgname "$pkgver" 2>/dev/null || true)"
+                              [ -n "$pkgname" ] && repo_pkgs="$repo_pkgs
+$pkgname"
+                              ;;
+                      esac
+                  done
+                  repo_pkgs="$(printf '%s\n' "$repo_pkgs" | sed '/^$/d' | sort -u)"
                   for pkg in $all_pkgs; do
-                      pkg_re=$(printf '%s\n' "$pkg" | sed 's/[][(){}.^$+*?|\\/]/\\&/g')
-                      if ! printf '%s\n' "$repo_files" | grep -Eq "^${pkg_re}-.*\\.(${RESULT_NAME}|noarch)\\.xbps$"; then
+                      if ! printf '%s\n' "$repo_pkgs" | grep -Fqx "$pkg"; then
                           missing_pkgs="$missing_pkgs $pkg"
                       fi
                   done
