@@ -1,40 +1,82 @@
 pkgname=bitwarden
 version=2026.1.0
-revision=1
-archs="x86_64"
+revision=2
+archs="x86_64* aarch64*"
 short_desc="Bitwarden desktop password manager"
 maintainer="rich@bandaholics.cash"
 license="GPL-3.0-or-later"
 homepage="https://bitwarden.com"
 
-distfiles="https://github.com/bitwarden/clients/releases/download/desktop-v${version}/Bitwarden-${version}-amd64.deb"
-checksum=6db36b2ed691901483a1c2355bdef5ca102a1f53a26cf4be2173b9e1a4b252e5
+case "${XBPS_TARGET_MACHINE}" in
+	x86_64*)
+		_upstream_arch=amd64
+		_archive=Bitwarden-${version}-${_upstream_arch}.deb
+		checksum=6db36b2ed691901483a1c2355bdef5ca102a1f53a26cf4be2173b9e1a4b252e5
+		;;
+	aarch64*)
+		_upstream_arch=arm64
+		_archive=bitwarden_${version}_${_upstream_arch}.tar.gz
+		checksum=fbc37d49a40a7302731476d98730557ad7e54f1bd1bcfca85b77e3ae1de2febf
+		;;
+esac
+distfiles="https://github.com/bitwarden/clients/releases/download/desktop-v${version}/${_archive}"
 
 hostmakedepends="tar xz"
 depends="gtk+3 nss alsa-lib libnotify libXScrnSaver dbus-glib"
 
 do_extract() {
-    ar x ${XBPS_SRCDISTDIR}/${pkgname}-${version}/Bitwarden-${version}-amd64.deb
-    tar xf data.tar.xz -C ${wrksrc}
+    case "${_archive}" in
+        *.deb)
+            ar x ${XBPS_SRCDISTDIR}/${pkgname}-${version}/${_archive}
+            tar xf data.tar.xz -C ${wrksrc}
+            ;;
+        *.tar.gz)
+            local _srcdist
+            _srcdist=${XBPS_SRCDISTDIR}/${pkgname}-${version}/${_archive}
+            mkdir -p ${wrksrc}/opt/Bitwarden
+            rm -rf ${wrksrc}/opt/Bitwarden/*
+            if ! tar xf ${_srcdist} -C ${wrksrc}/opt/Bitwarden --strip-components=1; then
+                rm -rf ${wrksrc}/opt/Bitwarden/*
+                tar xf ${_srcdist} -C ${wrksrc}/opt/Bitwarden
+            elif [ -z "$(find ${wrksrc}/opt/Bitwarden -mindepth 1 -print -quit)" ]; then
+                tar xf ${_srcdist} -C ${wrksrc}/opt/Bitwarden
+            fi
+            ;;
+    esac
 }
 
 do_install() {
     vmkdir /usr/bin
-    vmkdir /usr/share/icons/hicolor
-    vmkdir /usr/share/applications
-    vmkdir /usr/share/doc/bitwarden
 
-    vcopy usr/share/icons/hicolor/* /usr/share/icons/hicolor/
-    vcopy usr/share/applications/* /usr/share/applications/
-    vcopy usr/share/doc/bitwarden/* /usr/share/doc/bitwarden/
+    if [ -d usr/share/icons/hicolor ]; then
+        vmkdir /usr/share/icons/hicolor
+        vcopy usr/share/icons/hicolor/* /usr/share/icons/hicolor/
+    fi
+
+    if [ -d usr/share/applications ]; then
+        vmkdir /usr/share/applications
+        vcopy usr/share/applications/* /usr/share/applications/
+    fi
+
+    if [ -d usr/share/doc/bitwarden ]; then
+        vmkdir /usr/share/doc/bitwarden
+        vcopy usr/share/doc/bitwarden/* /usr/share/doc/bitwarden/
+    fi
 
     mkdir -p ${PKGDESTDIR}/opt/Bitwarden
     cp -a ${wrksrc}/opt/Bitwarden/* ${PKGDESTDIR}/opt/Bitwarden/
 
     ln -sf /opt/Bitwarden/bitwarden ${PKGDESTDIR}/usr/bin/bitwarden
 
-    chmod 4755 ${PKGDESTDIR}/opt/Bitwarden/chrome-sandbox
+    if [ -f ${PKGDESTDIR}/opt/Bitwarden/chrome-sandbox ]; then
+        chmod 4755 ${PKGDESTDIR}/opt/Bitwarden/chrome-sandbox
+    fi
 
-    vlicense opt/Bitwarden/LICENSE.electron.txt
-    vlicense opt/Bitwarden/LICENSES.chromium.html
+    if [ -f opt/Bitwarden/LICENSE.electron.txt ]; then
+        vlicense opt/Bitwarden/LICENSE.electron.txt
+    fi
+
+    if [ -f opt/Bitwarden/LICENSES.chromium.html ]; then
+        vlicense opt/Bitwarden/LICENSES.chromium.html
+    fi
 }
