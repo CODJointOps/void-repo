@@ -34,7 +34,9 @@ jobs:
               fi
 
               printf '%s\n' "$pkgname" >> "$managed_file"
-              mkdir -p "srcpkgs/$pkgname"
+              if [ ! -e "srcpkgs/$pkgname" ] && [ ! -L "srcpkgs/$pkgname" ]; then
+                  mkdir -p "srcpkgs/$pkgname"
+              fi
 
               if diff -rq --exclude='.git' --exclude='.gitea' --exclude='README.md' "$srcdir/" "srcpkgs/$pkgname/" >/dev/null 2>&1; then
                   echo "   No changes for $pkgname"
@@ -50,6 +52,36 @@ jobs:
               fi
           }
 
+          sync_one_symlink() {
+              pkgname="$1"
+              link_target="$2"
+
+              if [ -z "$link_target" ]; then
+                  echo "   WARNING: empty symlink target for $pkgname, skipping"
+                  return
+              fi
+
+              # If source symlink is absolute into the cloned temp repo, keep a
+              # stable in-repo relative target instead.
+              case "$link_target" in
+                  */srcpkgs/*)
+                      link_target="$(basename "$link_target")"
+                      ;;
+              esac
+
+              printf '%s\n' "$pkgname" >> "$managed_file"
+
+              if [ -L "srcpkgs/$pkgname" ] && [ "$(readlink "srcpkgs/$pkgname")" = "$link_target" ]; then
+                  echo "   No changes for $pkgname (symlink -> $link_target)"
+                  return
+              fi
+
+              rm -rf "srcpkgs/$pkgname"
+              ln -s "$link_target" "srcpkgs/$pkgname"
+              echo "   Updated $pkgname (symlink -> $link_target)"
+              changed=true
+          }
+
           sync_repo_all() {
               repo_url="$1"
               tmpdir="$2"
@@ -60,8 +92,14 @@ jobs:
                       [ -d "$pkgdir" ] || continue
                       found=1
                       pkgname="$(basename "$pkgdir")"
-                      echo "   -> syncing $pkgname"
-                      sync_one_pkg "$pkgname" "$pkgdir"
+                      if [ -L "$pkgdir" ]; then
+                          link_target="$(readlink "$pkgdir")"
+                          echo "   -> syncing $pkgname (symlink)"
+                          sync_one_symlink "$pkgname" "$link_target"
+                      else
+                          echo "   -> syncing $pkgname"
+                          sync_one_pkg "$pkgname" "$pkgdir"
+                      fi
                   done
                   if [ "$found" -eq 0 ]; then
                       echo "   WARNING: $repo_url has srcpkgs/ but no package dirs, skipping"
@@ -136,7 +174,12 @@ jobs:
                   if [ -d "$tmpdir/srcpkgs/$pkgname" ]; then
                       srcdir="$tmpdir/srcpkgs/$pkgname"
                   fi
-                  sync_one_pkg "$pkgname" "$srcdir"
+                  if [ -L "$srcdir" ]; then
+                      link_target="$(readlink "$srcdir")"
+                      sync_one_symlink "$pkgname" "$link_target"
+                  else
+                      sync_one_pkg "$pkgname" "$srcdir"
+                  fi
               else
                   # "all" mode: import every package in srcpkgs/* from this repo.
                   sync_repo_all "$repo_url" "$tmpdir"
@@ -147,7 +190,7 @@ jobs:
 
           # Remove packages no longer declared in packages.conf.
           for d in srcpkgs/*; do
-              [ -d "$d" ] || continue
+              [ -d "$d" ] || [ -L "$d" ] || continue
               pkg="$(basename "$d")"
               if ! grep -Fqx "$pkg" "$managed_file"; then
                   rm -rf "$d"
