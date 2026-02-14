@@ -26,10 +26,14 @@ sudo xbps-install -S
 
 ### GitHub Mirror
 
+#### Bash / Zsh
+
 ```bash
 ARCH="$(xbps-uhelper arch)"; echo "repository=https://raw.githubusercontent.com/CODJointOps/void-repo/repository-${ARCH}" | sudo tee /etc/xbps.d/20-void-repo.conf
 sudo xbps-install -S
 ```
+
+#### Fish
 
 ```fish
 echo "repository=https://raw.githubusercontent.com/CODJointOps/void-repo/repository-(xbps-uhelper arch)" | sudo tee /etc/xbps.d/20-void-repo.conf
