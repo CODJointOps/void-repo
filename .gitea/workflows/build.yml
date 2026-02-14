@@ -435,9 +435,13 @@ jobs:
           export PATH="/opt/xbps/usr/bin/:$PATH"
 
           mkdir -p /tmp/newpkgs
-          # Collect all .xbps from top-level and subdirs (e.g. nonfree/)
-          find . -name '*.xbps' -exec cp -v {} /tmp/newpkgs/ \;
-          find . -name '*.xbps.sig' -exec cp -v {} /tmp/newpkgs/ \;
+          # Collect only this arch + noarch packages from top-level/subdirs.
+          find . -maxdepth 2 -type f \( -name "*.${RESULT_NAME}.xbps" -o -name "*.noarch.xbps" \) \
+              -exec cp -v {} /tmp/newpkgs/ \;
+          find . -maxdepth 2 -type f \
+              \( -name "*.${RESULT_NAME}.xbps.sig" -o -name "*.noarch.xbps.sig" -o \
+                 -name "*.${RESULT_NAME}.xbps.sig2" -o -name "*.noarch.xbps.sig2" \) \
+              -exec cp -v {} /tmp/newpkgs/ \;
 
           GIT_USER="${ACCESS_GIT_USER:-$REPO_OWNER}"
           BRANCH="repository-${RESULT_NAME}"
@@ -449,9 +453,12 @@ jobs:
 
           if git ls-remote --exit-code --heads "$REMOTE" "$BRANCH" >/dev/null 2>&1; then
               git clone --depth 1 --branch "$BRANCH" "$REMOTE" /tmp/oldrepo
-              cp -v /tmp/oldrepo/*.xbps . 2>/dev/null || true
-              cp -v /tmp/oldrepo/*.xbps.sig . 2>/dev/null || true
-              cp -v /tmp/oldrepo/*.xbps.sig2 . 2>/dev/null || true
+              cp -v /tmp/oldrepo/*.${RESULT_NAME}.xbps . 2>/dev/null || true
+              cp -v /tmp/oldrepo/*.noarch.xbps . 2>/dev/null || true
+              cp -v /tmp/oldrepo/*.${RESULT_NAME}.xbps.sig . 2>/dev/null || true
+              cp -v /tmp/oldrepo/*.noarch.xbps.sig . 2>/dev/null || true
+              cp -v /tmp/oldrepo/*.${RESULT_NAME}.xbps.sig2 . 2>/dev/null || true
+              cp -v /tmp/oldrepo/*.noarch.xbps.sig2 . 2>/dev/null || true
           else
               echo "No existing $BRANCH on remote, starting fresh."
           fi
@@ -467,7 +474,10 @@ jobs:
                   new_pkg_files="$new_pkg_files ./${base}"
                   continue
               fi
-              rm -f "${pkgname}-"*.xbps "${pkgname}-"*.xbps.sig "${pkgname}-"*.xbps.sig2 2>/dev/null || true
+              rm -f "${pkgname}-"*.${RESULT_NAME}.xbps "${pkgname}-"*.noarch.xbps \
+                    "${pkgname}-"*.${RESULT_NAME}.xbps.sig "${pkgname}-"*.noarch.xbps.sig \
+                    "${pkgname}-"*.${RESULT_NAME}.xbps.sig2 "${pkgname}-"*.noarch.xbps.sig2 \
+                    2>/dev/null || true
               new_pkg_files="$new_pkg_files ./${base}"
           done
 
@@ -475,8 +485,14 @@ jobs:
           if [ -n "$removed" ]; then
               echo "==> removing packages for deleted templates..."
               for pkg in $removed; do
-                  rm -f "${pkg}-"*.xbps "${pkg}-"*.xbps.sig "${pkg}-"*.xbps.sig2 2>/dev/null || true
-                  rm -f "${pkg}.xbps" "${pkg}.xbps.sig" "${pkg}.xbps.sig2" 2>/dev/null || true
+                  rm -f "${pkg}-"*.${RESULT_NAME}.xbps "${pkg}-"*.noarch.xbps \
+                        "${pkg}-"*.${RESULT_NAME}.xbps.sig "${pkg}-"*.noarch.xbps.sig \
+                        "${pkg}-"*.${RESULT_NAME}.xbps.sig2 "${pkg}-"*.noarch.xbps.sig2 \
+                        2>/dev/null || true
+                  rm -f "${pkg}.${RESULT_NAME}.xbps" "${pkg}.noarch.xbps" \
+                        "${pkg}.${RESULT_NAME}.xbps.sig" "${pkg}.noarch.xbps.sig" \
+                        "${pkg}.${RESULT_NAME}.xbps.sig2" "${pkg}.noarch.xbps.sig2" \
+                        2>/dev/null || true
               done
           fi
 
@@ -541,6 +557,7 @@ jobs:
 
           git config --local --unset-all lfs.url 2>/dev/null || true
           git config --local --unset-all "lfs.${LFS_URL}.access" 2>/dev/null || true
+          git config --local lfs.locksverify false
           git config --local "lfs.${LFS_URL}.locksverify" false
           # Prefer conservative transfer settings to reduce proxy/stream interruptions.
           git config --local http.version HTTP/1.1
@@ -550,23 +567,26 @@ jobs:
           git config --local lfs.transfer.maxretrydelay 30
           git lfs install --local
 
-          if git ls-remote --exit-code --heads "$REMOTE" "$BRANCH" >/dev/null 2>&1; then
-              git fetch "$REMOTE" "$BRANCH"
-              git checkout -B "$BRANCH" FETCH_HEAD
-          else
-              git checkout --orphan "$BRANCH"
-          fi
+          # Snapshot-only branch: recreate branch from scratch every run.
+          git checkout --orphan "$BRANCH"
+          git reset --hard
 
           mkdir -p /tmp/failfiles
           cp build-failures-* /tmp/failfiles/ 2>/dev/null || true
 
           find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
 
-          # Copy all .xbps and related files (flatten from subdirs like nonfree/)
-          find ../void-packages/hostdir/binpkgs/ -maxdepth 2 -name '*.xbps' -exec cp -v {} . \;
-          find ../void-packages/hostdir/binpkgs/ -maxdepth 2 -name '*.xbps.sig' -exec cp -v {} . \;
-          find ../void-packages/hostdir/binpkgs/ -maxdepth 2 -name '*.xbps.sig2' -exec cp -v {} . \;
-          cp ../void-packages/hostdir/binpkgs/*-repodata . 2>/dev/null || true
+          # Copy only this arch + noarch artifacts (flatten from subdirs like nonfree/)
+          find ../void-packages/hostdir/binpkgs/ -maxdepth 2 -type f \
+              \( -name "*.${RESULT_NAME}.xbps" -o -name "*.noarch.xbps" \) \
+              -exec cp -v {} . \;
+          find ../void-packages/hostdir/binpkgs/ -maxdepth 2 -type f \
+              \( -name "*.${RESULT_NAME}.xbps.sig" -o -name "*.noarch.xbps.sig" \) \
+              -exec cp -v {} . \;
+          find ../void-packages/hostdir/binpkgs/ -maxdepth 2 -type f \
+              \( -name "*.${RESULT_NAME}.xbps.sig2" -o -name "*.noarch.xbps.sig2" \) \
+              -exec cp -v {} . \;
+          cp ../void-packages/hostdir/binpkgs/${RESULT_NAME}-repodata . 2>/dev/null || true
 
           cp /tmp/failfiles/* . 2>/dev/null || true
 
@@ -578,7 +598,7 @@ jobs:
           push_with_retry() {
               pushed=0
               for attempt in 1 2 3; do
-                  if git push "$REMOTE" "$BRANCH"; then
+                  if git push --force "$REMOTE" "$BRANCH"; then
                       pushed=1
                       break
                   fi
