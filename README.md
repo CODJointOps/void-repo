@@ -52,9 +52,27 @@ On first refresh, accept the repo signing key prompt.
 
 | Package | Archs |
 |---|---|
+| `aquamarine` | `all` |
 | `bitwarden` | `x86_64` |
 | `claude-desktop` | `x86_64` |
 | `ente-auth` | `x86_64` (`only_for_archs`) |
-| `mullvad-vpn` | `x86_64`, `aarch64` |
-| `vesktop` | `x86_64`, `aarch64` |
+| `glaze` | `all` |
+| `hyprcursor` | `all` |
+| `hyprgraphics` | `all` |
+| `hyprland` | `all` |
+| `hyprland-guiutils` | `all` |
+| `hyprland-protocols` | `all` |
+| `hyprland-qt-support` | `all` |
+| `hyprlang` | `all` |
+| `hyprlock` | `all` |
+| `hyprpaper` | `all` |
+| `hyprpicker` | `all` |
+| `hyprtoolkit` | `all` |
+| `hyprutils` | `all` |
+| `hyprwayland-scanner` | `all` |
+| `hyprwire` | `all` |
+| `libspng` | `all` |
+| `mullvad-vpn` | `x86_64` |
+| `sdbus-cpp` | `all` |
+| `vesktop` | `x86_64` |
 | `zen-browser` | `x86_64`, `aarch64` |
