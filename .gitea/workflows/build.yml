@@ -156,23 +156,22 @@ jobs:
           BRANCH="repository-${RESULT_NAME}"
           REMOTE_PUBLIC="https://git.deadzone.lol/${REPO_OWNER}/${REPO_NAME}.git"
           REMOTE_AUTH="https://${GIT_USER}:${ACCESS_GIT}@git.deadzone.lol/${REPO_OWNER}/${REPO_NAME}.git"
-          REPO_TMP="/tmp/repo-${RESULT_NAME}"
           missing_pkgs=""
 
           if git ls-remote --exit-code --heads "$REMOTE_PUBLIC" "$BRANCH" >/dev/null 2>&1 || \
              git ls-remote --exit-code --heads "$REMOTE_AUTH" "$BRANCH" >/dev/null 2>&1; then
-              rm -rf "$REPO_TMP"
-              if git clone --depth 1 --branch "$BRANCH" "$REMOTE_PUBLIC" "$REPO_TMP" >/dev/null 2>&1 || \
-                 git clone --depth 1 --branch "$BRANCH" "$REMOTE_AUTH" "$REPO_TMP" >/dev/null 2>&1; then
+              BRANCH_REF="refs/remotes/repo-check/${RESULT_NAME}"
+              if git fetch --no-tags --depth 1 "$REMOTE_PUBLIC" "$BRANCH:$BRANCH_REF" >/dev/null 2>&1 || \
+                 git fetch --no-tags --depth 1 "$REMOTE_AUTH" "$BRANCH:$BRANCH_REF" >/dev/null 2>&1; then
+                  repo_files="$(git ls-tree -r --name-only "$BRANCH_REF" || true)"
                   for pkg in $all_pkgs; do
-                      if ! find "$REPO_TMP" -maxdepth 1 -type f \
-                          \( -name "${pkg}-*.${RESULT_NAME}.xbps" -o -name "${pkg}-*.noarch.xbps" \) \
-                          | grep -q .; then
+                      pkg_re=$(printf '%s\n' "$pkg" | sed 's/[][(){}.^$+*?|\\/]/\\&/g')
+                      if ! printf '%s\n' "$repo_files" | grep -Eq "^${pkg_re}-.*\\.(${RESULT_NAME}|noarch)\\.xbps$"; then
                           missing_pkgs="$missing_pkgs $pkg"
                       fi
                   done
               else
-                  echo "WARNING: failed to clone ${BRANCH}; skipping missing-package backfill."
+                  echo "WARNING: failed to fetch ${BRANCH}; skipping missing-package backfill."
               fi
           else
               echo "No existing ${BRANCH}; forcing full package list for initial population."
