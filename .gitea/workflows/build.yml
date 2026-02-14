@@ -106,6 +106,12 @@ jobs:
 
       - name: Determine changed packages
         id: changed
+        env:
+          ACCESS_GIT: ${{ secrets.ACCESS_GIT }}
+          ACCESS_GIT_USER: ${{ secrets.ACCESS_GIT_USER }}
+          REPO_OWNER: ${{ gitea.repository_owner }}
+          REPO_NAME: ${{ gitea.event.repository.name }}
+          RESULT_NAME: ${{ matrix.config.arch }}
         run: |
           cd extra
 
@@ -142,6 +148,46 @@ jobs:
 
           changed_pkgs="${changed_pkgs%% }"
           removed_pkgs="${removed_pkgs%% }"
+
+          # Ensure packages missing from the arch repo branch are retried even
+          # when templates didn't change (e.g. previously failed builds).
+          all_pkgs=$(find srcpkgs -maxdepth 1 -mindepth 1 -type d -printf "%f\n" | sort -u)
+          GIT_USER="${ACCESS_GIT_USER:-$REPO_OWNER}"
+          BRANCH="repository-${RESULT_NAME}"
+          REMOTE_PUBLIC="https://git.deadzone.lol/${REPO_OWNER}/${REPO_NAME}.git"
+          REMOTE_AUTH="https://${GIT_USER}:${ACCESS_GIT}@git.deadzone.lol/${REPO_OWNER}/${REPO_NAME}.git"
+          REPO_TMP="/tmp/repo-${RESULT_NAME}"
+          missing_pkgs=""
+
+          if git ls-remote --exit-code --heads "$REMOTE_PUBLIC" "$BRANCH" >/dev/null 2>&1 || \
+             git ls-remote --exit-code --heads "$REMOTE_AUTH" "$BRANCH" >/dev/null 2>&1; then
+              rm -rf "$REPO_TMP"
+              if git clone --depth 1 --branch "$BRANCH" "$REMOTE_PUBLIC" "$REPO_TMP" >/dev/null 2>&1 || \
+                 git clone --depth 1 --branch "$BRANCH" "$REMOTE_AUTH" "$REPO_TMP" >/dev/null 2>&1; then
+                  for pkg in $all_pkgs; do
+                      if ! find "$REPO_TMP" -maxdepth 1 -type f \
+                          \( -name "${pkg}-*.${RESULT_NAME}.xbps" -o -name "${pkg}-*.noarch.xbps" \) \
+                          | grep -q .; then
+                          missing_pkgs="$missing_pkgs $pkg"
+                      fi
+                  done
+              else
+                  echo "WARNING: failed to clone ${BRANCH}; skipping missing-package backfill."
+              fi
+          else
+              echo "No existing ${BRANCH}; forcing full package list for initial population."
+              missing_pkgs="$all_pkgs"
+          fi
+
+          if [ -n "$missing_pkgs" ]; then
+              changed_pkgs="$(printf '%s\n%s\n' "$changed_pkgs" "$missing_pkgs" \
+                  | tr ' ' '\n' \
+                  | sed '/^$/d' \
+                  | sort -u \
+                  | tr '\n' ' ')"
+              changed_pkgs="${changed_pkgs%% }"
+              echo "Missing in ${BRANCH}, force-build: ${missing_pkgs#" "}"
+          fi
 
           echo "Changed templates: ${changed_pkgs:-<none>}"
           echo "Removed templates: ${removed_pkgs:-<none>}"
@@ -407,7 +453,6 @@ jobs:
               cp -v /tmp/oldrepo/*.xbps . 2>/dev/null || true
               cp -v /tmp/oldrepo/*.xbps.sig . 2>/dev/null || true
               cp -v /tmp/oldrepo/*.xbps.sig2 . 2>/dev/null || true
-              cp -v /tmp/oldrepo/index* . 2>/dev/null || true
           else
               echo "No existing $BRANCH on remote, starting fresh."
           fi
@@ -441,21 +486,26 @@ jobs:
           set -- ./*.xbps
           if [ ! -e "$1" ]; then
               echo "No .xbps packages to sign for ${RESULT_NAME}; skipping."
-              rm -f index* 2>/dev/null || true
+              rm -f index* ./*-repodata 2>/dev/null || true
               exit 0
           fi
 
           printf "%s\n" "$PRIV_KEY" > private.pem
           chmod 600 private.pem
 
-          if [ -n "$new_pkg_files" ]; then
-              xbps-rindex -a $new_pkg_files || true
-          else
-              echo "No new .xbps files; refreshing repository metadata only."
-          fi
-          xbps-rindex -r "$PWD"
+          # Rebuild metadata from all currently present packages so one-package
+          # updates never prune unrelated packages from the repo branch.
+          rm -f index* ./*-repodata 2>/dev/null || true
+          all_pkg_files=""
+          for f in ./*.xbps; do
+              [ -e "$f" ] || continue
+              all_pkg_files="$all_pkg_files $f"
+          done
+          # Intentionally expanded as a file list.
+          xbps-rindex -a $all_pkg_files
           xbps-rindex -s --signedby "void-repo <noreply@deadzone.lol>" --privkey private.pem "$PWD"
           if [ -n "$new_pkg_files" ]; then
+              # Intentionally expanded as a file list.
               xbps-rindex -S --privkey private.pem $new_pkg_files
           fi
           xbps-rindex -c "$PWD"
