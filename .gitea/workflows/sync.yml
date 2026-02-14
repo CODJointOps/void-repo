@@ -24,28 +24,16 @@ jobs:
           managed_file=$(mktemp)
           trap 'rm -f "$managed_file"' EXIT
 
-          while IFS=' ' read -r pkgname repo_url; do
-              [ -z "$pkgname" ] && continue
-              case "$pkgname" in
-                  \#*) continue ;;
-              esac
+          sync_one_pkg() {
+              pkgname="$1"
+              srcdir="$2"
 
-              printf '%s\n' "$pkgname" >> "$managed_file"
-
-              echo "==> Syncing $pkgname from $repo_url"
-              tmpdir=$(mktemp -d)
-              git clone --depth 1 "$repo_url" "$tmpdir"
-
-              # Source repos have template+files at root, not under srcpkgs/
-              srcdir="$tmpdir"
-              if [ -d "$tmpdir/srcpkgs/$pkgname" ]; then
-                  srcdir="$tmpdir/srcpkgs/$pkgname"
-              elif [ ! -f "$tmpdir/template" ]; then
-                  echo "   WARNING: no template found in $repo_url, skipping"
-                  rm -rf "$tmpdir"
-                  continue
+              if [ ! -f "$srcdir/template" ]; then
+                  echo "   WARNING: missing template for $pkgname in $srcdir, skipping"
+                  return
               fi
 
+              printf '%s\n' "$pkgname" >> "$managed_file"
               mkdir -p "srcpkgs/$pkgname"
 
               if diff -rq --exclude='.git' --exclude='.gitea' --exclude='README.md' "$srcdir/" "srcpkgs/$pkgname/" >/dev/null 2>&1; then
@@ -59,6 +47,99 @@ jobs:
                   [ -d "$srcdir/patches" ] && cp -r "$srcdir/patches" "srcpkgs/$pkgname/"
                   echo "   Updated $pkgname"
                   changed=true
+              fi
+          }
+
+          sync_repo_all() {
+              repo_url="$1"
+              tmpdir="$2"
+
+              if [ -d "$tmpdir/srcpkgs" ]; then
+                  found=0
+                  for pkgdir in "$tmpdir"/srcpkgs/*; do
+                      [ -d "$pkgdir" ] || continue
+                      found=1
+                      pkgname="$(basename "$pkgdir")"
+                      echo "   -> syncing $pkgname"
+                      sync_one_pkg "$pkgname" "$pkgdir"
+                  done
+                  if [ "$found" -eq 0 ]; then
+                      echo "   WARNING: $repo_url has srcpkgs/ but no package dirs, skipping"
+                  fi
+                  return
+              fi
+
+              # Also allow a bare single-package template repo in "all" mode.
+              if [ -f "$tmpdir/template" ]; then
+                  pkgname="$(sed -n 's/^pkgname=//p' "$tmpdir/template" | head -n1 | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//")"
+                  if [ -z "$pkgname" ]; then
+                      pkgname="$(basename "$repo_url" .git)"
+                  fi
+                  echo "   -> syncing $pkgname (root template)"
+                  sync_one_pkg "$pkgname" "$tmpdir"
+                  return
+              fi
+
+              echo "   WARNING: no srcpkgs/ or template found in $repo_url, skipping"
+          }
+
+          while IFS= read -r raw_line || [ -n "$raw_line" ]; do
+              line="${raw_line%%#*}"
+              line="$(printf '%s' "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+              [ -z "$line" ] && continue
+
+              set -- $line
+              mode=""
+              pkgname=""
+              repo_url=""
+
+              case "$1" in
+                  all|@all|\*)
+                      repo_url="$2"
+                      mode="all"
+                      ;;
+                  *)
+                      if [ "$#" -eq 1 ]; then
+                          repo_url="$1"
+                          case "$repo_url" in
+                              *://*|git@*:* ) mode="all" ;;
+                          esac
+                      elif [ "$#" -ge 2 ]; then
+                          pkgname="$1"
+                          repo_url="$2"
+                          mode="single"
+                      fi
+                      ;;
+              esac
+
+              if [ -z "$mode" ] || [ -z "$repo_url" ]; then
+                  echo "WARNING: invalid packages.conf line: $raw_line"
+                  continue
+              fi
+
+              if [ "$mode" = "single" ]; then
+                  echo "==> Syncing $pkgname from $repo_url"
+              else
+                  echo "==> Syncing all packages from $repo_url"
+              fi
+
+              tmpdir=$(mktemp -d)
+              if ! git clone --depth 1 "$repo_url" "$tmpdir"; then
+                  echo "   WARNING: failed to clone $repo_url, skipping"
+                  rm -rf "$tmpdir"
+                  continue
+              fi
+
+              if [ "$mode" = "single" ]; then
+                  # Source repos may expose package under srcpkgs/<pkg> or at repo root.
+                  srcdir="$tmpdir"
+                  if [ -d "$tmpdir/srcpkgs/$pkgname" ]; then
+                      srcdir="$tmpdir/srcpkgs/$pkgname"
+                  fi
+                  sync_one_pkg "$pkgname" "$srcdir"
+              else
+                  # "all" mode: import every package in srcpkgs/* from this repo.
+                  sync_repo_all "$repo_url" "$tmpdir"
               fi
 
               rm -rf "$tmpdir"
