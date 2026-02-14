@@ -1,7 +1,7 @@
 pkgname=bitwarden
 version=2026.1.0
 revision=2
-archs="x86_64* aarch64*"
+archs="x86_64 aarch64"
 short_desc="Bitwarden desktop password manager"
 maintainer="rich@bandaholics.cash"
 license="GPL-3.0-or-later"
