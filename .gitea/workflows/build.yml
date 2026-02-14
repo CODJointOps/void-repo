@@ -118,11 +118,17 @@ jobs:
           base="${{ gitea.event.before }}"
           tip="${{ gitea.sha }}"
 
+          # workflow_dispatch often has empty/zero "before". Prefer a local
+          # parent commit instead of force-marking all packages changed.
           if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ]; then
-              changed_pkgs=$(find srcpkgs -maxdepth 1 -mindepth 1 -type d -printf "%f\n" \
-                | tr '\n' ' ')
-              removed_pkgs=""
-          else
+              if git rev-parse --verify "${tip}^" >/dev/null 2>&1; then
+                  base="$(git rev-parse "${tip}^")"
+              fi
+          fi
+
+          changed_pkgs=""
+          removed_pkgs=""
+          if [ -n "$base" ] && [ "$base" != "0000000000000000000000000000000000000000" ]; then
               # Collect all package names touched under srcpkgs/, including rename old/new paths.
               touched_pkgs=$(git diff --name-status "$base" "$tip" -- 'srcpkgs/*' \
                   | awk '
@@ -132,8 +138,6 @@ jobs:
                   | awk -F/ 'NF>=2 {print $2}' \
                   | sort -u)
 
-              changed_pkgs=""
-              removed_pkgs=""
               for pkg in $touched_pkgs; do
                   if [ -d "srcpkgs/$pkg" ]; then
                       changed_pkgs="$changed_pkgs $pkg"
@@ -141,10 +145,12 @@ jobs:
                       removed_pkgs="$removed_pkgs $pkg"
                   fi
               done
-
-              changed_pkgs="${changed_pkgs#" "}"
-              removed_pkgs="${removed_pkgs#" "}"
+          else
+              echo "No valid base commit; changed package set will be empty unless missing-package backfill adds entries."
           fi
+
+          changed_pkgs="${changed_pkgs#" "}"
+          removed_pkgs="${removed_pkgs#" "}"
 
           changed_pkgs="${changed_pkgs%% }"
           removed_pkgs="${removed_pkgs%% }"
