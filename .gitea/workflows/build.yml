@@ -585,6 +585,13 @@ jobs:
           git lfs install --local
 
           # Snapshot-only branch: recreate branch from scratch every run.
+          if git show-ref --verify --quiet "refs/heads/${BRANCH}"; then
+              current_branch="$(git symbolic-ref --short -q HEAD || true)"
+              if [ "$current_branch" = "$BRANCH" ]; then
+                  git checkout --detach
+              fi
+              git branch -D "$BRANCH" || true
+          fi
           git checkout --orphan "$BRANCH"
           git reset --hard
 
