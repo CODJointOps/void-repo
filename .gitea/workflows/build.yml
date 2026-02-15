@@ -155,6 +155,81 @@ jobs:
           changed_pkgs="${changed_pkgs%% }"
           removed_pkgs="${removed_pkgs%% }"
 
+          parse_tpl_var() {
+              key="$1"
+              file="$2"
+              awk -v key="$key" '
+                  $0 ~ "^[[:space:]]*" key "=" {
+                      line=$0
+                      sub("^[[:space:]]*" key "=", "", line)
+                      sub("[[:space:]]*#.*$", "", line)
+                      if (line ~ /^"/) {
+                          sub(/^"/, "", line)
+                          sub(/".*$/, "", line)
+                          print line
+                          exit
+                      }
+                      if (line ~ /^'\''/) {
+                          sub(/^'\''/, "", line)
+                          sub(/'\''.*/, "", line)
+                          print line
+                          exit
+                      }
+                      gsub(/^[[:space:]]+|[[:space:]]+$/, "", line)
+                      print line
+                      exit
+                  }
+              ' "$file"
+          }
+
+          arch_matches_list() {
+              list="$1"
+              [ -z "$list" ] && return 0
+
+              matched=0
+              blocked=0
+              set -f
+              for token in $list; do
+                  case "$token" in
+                      noarch)
+                          matched=1
+                          ;;
+                      !*)
+                          pat="${token#!}"
+                          case "$RESULT_NAME" in
+                              $pat) blocked=1 ;;
+                          esac
+                          ;;
+                      *)
+                          case "$RESULT_NAME" in
+                              $token) matched=1 ;;
+                          esac
+                          ;;
+                  esac
+              done
+              set +f
+
+              [ "$blocked" -eq 1 ] && return 1
+              [ "$matched" -eq 1 ]
+          }
+
+          pkg_supports_arch() {
+              pkg="$1"
+              tpl="srcpkgs/${pkg}/template"
+              [ -f "$tpl" ] || return 1
+
+              only_for_archs="$(parse_tpl_var only_for_archs "$tpl")"
+              arch_spec="$(parse_tpl_var archs "$tpl")"
+
+              if [ -n "$only_for_archs" ] && ! arch_matches_list "$only_for_archs"; then
+                  return 1
+              fi
+              if [ -n "$arch_spec" ] && ! arch_matches_list "$arch_spec"; then
+                  return 1
+              fi
+              return 0
+          }
+
           # Ensure packages missing from the arch repo branch are retried even
           # when templates didn't change (e.g. previously failed builds).
           all_pkgs=$(find srcpkgs -maxdepth 1 -mindepth 1 -type d -printf "%f\n" | sort -u)
@@ -183,6 +258,7 @@ jobs:
                   done
                   repo_pkgs="$(printf '%s\n' "$repo_pkgs" | tr ' ' '\n' | sed '/^$/d' | sort -u)"
                   for pkg in $all_pkgs; do
+                      pkg_supports_arch "$pkg" || continue
                       if ! printf '%s\n' "$repo_pkgs" | grep -Fqx "$pkg"; then
                           missing_pkgs="$missing_pkgs $pkg"
                       fi
@@ -205,6 +281,22 @@ jobs:
               echo "Missing in ${BRANCH}, force-build: ${missing_pkgs#" "}"
           fi
 
+          # Final arch filtering before expensive build setup steps.
+          filtered_changed=""
+          arch_skipped=""
+          for pkg in $changed_pkgs; do
+              if pkg_supports_arch "$pkg"; then
+                  filtered_changed="$filtered_changed $pkg"
+              else
+                  arch_skipped="$arch_skipped $pkg"
+              fi
+          done
+          changed_pkgs="${filtered_changed#" "}"
+          changed_pkgs="${changed_pkgs%% }"
+          if [ -n "$arch_skipped" ]; then
+              echo "Arch-filtered out for ${RESULT_NAME}: ${arch_skipped#" "}"
+          fi
+
           echo "Changed templates: ${changed_pkgs:-<none>}"
           echo "Removed templates: ${removed_pkgs:-<none>}"
 
@@ -212,12 +304,14 @@ jobs:
           echo "removed=$removed_pkgs" >> "$GITHUB_OUTPUT"
 
       - name: Checkout void-packages
+        if: ${{ steps.changed.outputs.pkgs != '' || steps.changed.outputs.removed != '' }}
         run: |
           git clone https://github.com/void-linux/void-packages.git void-packages
           cd void-packages
           git checkout --detach master
 
       - name: Merge templates and edit shlibs
+        if: ${{ steps.changed.outputs.pkgs != '' || steps.changed.outputs.removed != '' }}
         run: |
           echo "==> copying templates..."
           cp -rv extra/srcpkgs/* void-packages/srcpkgs/
@@ -246,6 +340,7 @@ jobs:
           fi
 
       - name: Prepare masterdir
+        if: ${{ steps.changed.outputs.pkgs != '' || steps.changed.outputs.removed != '' }}
         run: |
           cd void-packages
           chown -R builder:builder . &&
@@ -255,6 +350,7 @@ jobs:
 
       - name: Build
         id: build_step
+        if: ${{ steps.changed.outputs.pkgs != '' || steps.changed.outputs.removed != '' }}
         run: |
           export PATH="/opt/xbps/usr/bin/:$PATH"
           cd void-packages
