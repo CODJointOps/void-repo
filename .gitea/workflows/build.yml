@@ -34,12 +34,17 @@ jobs:
       contents: write
 
     steps:
-      - name: Prepare container
+      - name: Bootstrap git tools
         run: |
-          mkdir -p /etc/xbps.d && cp /usr/share/xbps.d/*-repository-*.conf /etc/xbps.d/
-          sed -i 's|repo-default|repo-ci|g' /etc/xbps.d/*-repository-*.conf
-          xbps-install -Syu xbps && xbps-install -yu && xbps-install -y sudo bash curl git git-lfs
-          useradd -G xbuilder -M builder
+          need_tools=""
+          command -v git >/dev/null 2>&1 || need_tools="$need_tools git"
+          command -v git-lfs >/dev/null 2>&1 || need_tools="$need_tools git-lfs"
+          command -v curl >/dev/null 2>&1 || need_tools="$need_tools curl"
+          command -v bash >/dev/null 2>&1 || need_tools="$need_tools bash"
+          need_tools="$(printf '%s' "$need_tools" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+          if [ -n "$need_tools" ]; then
+              xbps-install -Sy $need_tools
+          fi
 
       - name: Configure git credentials for LFS
         env:
@@ -302,6 +307,19 @@ jobs:
 
           echo "pkgs=$changed_pkgs" >> "$GITHUB_OUTPUT"
           echo "removed=$removed_pkgs" >> "$GITHUB_OUTPUT"
+
+      - name: Stop early when nothing is buildable
+        if: ${{ steps.changed.outputs.pkgs == '' && steps.changed.outputs.removed == '' }}
+        run: |
+          echo "No changed/missing/removed packages for ${{ matrix.config.arch }}. Skipping this arch job."
+
+      - name: Prepare container
+        if: ${{ steps.changed.outputs.pkgs != '' || steps.changed.outputs.removed != '' }}
+        run: |
+          mkdir -p /etc/xbps.d && cp /usr/share/xbps.d/*-repository-*.conf /etc/xbps.d/
+          sed -i 's|repo-default|repo-ci|g' /etc/xbps.d/*-repository-*.conf
+          xbps-install -Syu xbps && xbps-install -yu && xbps-install -y sudo
+          id -u builder >/dev/null 2>&1 || useradd -G xbuilder -M builder
 
       - name: Checkout void-packages
         if: ${{ steps.changed.outputs.pkgs != '' || steps.changed.outputs.removed != '' }}
