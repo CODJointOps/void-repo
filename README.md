@@ -60,6 +60,7 @@ On first refresh, accept the repo signing key prompt.
 | `hyprcursor` | `all` |
 | `hyprgraphics` | `all` |
 | `hyprland` | `all` |
+| `hyprland-devel` | `all` |
 | `hyprland-guiutils` | `all` |
 | `hyprland-protocols` | `all` |
 | `hyprland-qt-support` | `all` |
@@ -72,6 +73,7 @@ On first refresh, accept the repo signing key prompt.
 | `hyprwayland-scanner` | `all` |
 | `hyprwire` | `all` |
 | `libspng` | `all` |
+| `mullvad-browser` | `x86_64` |
 | `mullvad-vpn` | `x86_64` |
 | `sdbus-cpp` | `all` |
 | `vesktop` | `x86_64` |
