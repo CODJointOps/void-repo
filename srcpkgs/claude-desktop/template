@@ -11,9 +11,9 @@ homepage="https://claude.ai"
 changelog="https://github.com/patrickjaja/claude-desktop-bin/releases"
 repository="nonfree"
 restricted=yes
-_tag=v1.1.3189
+_tag=v1.1.3189-2
 distfiles="https://github.com/patrickjaja/claude-desktop-bin/releases/download/${_tag}/claude-desktop-${version}-linux.tar.gz"
-checksum=ee6173568932f24bcdda1c09f4c073e449335147ee3e8bca3bc2931e7402fa7c
+checksum=daad21991cdbae87730135732895dababc74da2eaf8f268596882a3c5a50cd77
 
 do_install() {
 	vmkdir usr/lib/${pkgname}
