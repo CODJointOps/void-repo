@@ -1,7 +1,7 @@
 # Template file for 'zen-browser'
 pkgname=zen-browser
 version=1.18.8b
-revision=2
+revision=1
 archs="x86_64 aarch64"
 hostmakedepends="curl xz"
 depends="desktop-file-utils hicolor-icon-theme libnotify libavcodec xdg-utils"
