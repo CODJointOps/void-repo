@@ -238,6 +238,7 @@ jobs:
           REMOTE_PUBLIC="https://git.deadzone.lol/${REPO_OWNER}/${REPO_NAME}.git"
           REMOTE_AUTH="https://${GIT_USER}:${ACCESS_GIT}@git.deadzone.lol/${REPO_OWNER}/${REPO_NAME}.git"
           missing_pkgs=""
+          outdated_pkgs=""
 
           if git ls-remote --exit-code --heads "$REMOTE_PUBLIC" "$BRANCH" >/dev/null 2>&1 || \
              git ls-remote --exit-code --heads "$REMOTE_AUTH" "$BRANCH" >/dev/null 2>&1; then
@@ -246,6 +247,7 @@ jobs:
                  git fetch --no-tags --depth 1 "$REMOTE_AUTH" "$BRANCH:$BRANCH_REF" >/dev/null 2>&1; then
                   repo_files="$(git ls-tree -r --name-only "$BRANCH_REF" || true)"
                   repo_pkgs=""
+                  repo_pkgvers=""
                   for f in $repo_files; do
                       case "$f" in
                           *.${RESULT_NAME}.xbps|*.noarch.xbps)
@@ -253,14 +255,33 @@ jobs:
                               pkgver="$(xbps-uhelper binpkgver "$base" 2>/dev/null || true)"
                               pkgname="$(xbps-uhelper getpkgname "$pkgver" 2>/dev/null || true)"
                               [ -n "$pkgname" ] && repo_pkgs="$repo_pkgs $pkgname"
+                              if [ -n "$pkgname" ] && [ -n "$pkgver" ]; then
+                                  repo_pkgvers="${repo_pkgvers}${pkgname} ${pkgver}\\n"
+                              fi
                               ;;
                       esac
                   done
                   repo_pkgs="$(printf '%s\n' "$repo_pkgs" | tr ' ' '\n' | sed '/^$/d' | sort -u)"
+                  repo_pkgvers="$(printf '%b' "$repo_pkgvers" | sed '/^$/d' | sort -u)"
                   for pkg in $all_pkgs; do
                       pkg_supports_arch "$pkg" || continue
-                      if ! printf '%s\n' "$repo_pkgs" | grep -Fqx "$pkg"; then
+                      tpl="srcpkgs/${pkg}/template"
+                      tpl_pkgname="$(parse_tpl_var pkgname "$tpl")"
+                      [ -n "$tpl_pkgname" ] || tpl_pkgname="$pkg"
+                      tpl_version="$(parse_tpl_var version "$tpl")"
+                      tpl_revision="$(parse_tpl_var revision "$tpl")"
+                      [ -n "$tpl_revision" ] || tpl_revision="1"
+
+                      if ! printf '%s\n' "$repo_pkgs" | grep -Fqx "$tpl_pkgname"; then
                           missing_pkgs="$missing_pkgs $pkg"
+                          continue
+                      fi
+
+                      if [ -n "$tpl_version" ]; then
+                          expected_pkgver="${tpl_pkgname}-${tpl_version}_${tpl_revision}"
+                          if ! printf '%s\n' "$repo_pkgvers" | grep -Fqx "${tpl_pkgname} ${expected_pkgver}"; then
+                              outdated_pkgs="$outdated_pkgs $pkg"
+                          fi
                       fi
                   done
               else
@@ -279,6 +300,16 @@ jobs:
                   | tr '\n' ' ')"
               changed_pkgs="${changed_pkgs%% }"
               echo "Missing in ${BRANCH}, force-build: ${missing_pkgs#" "}"
+          fi
+
+          if [ -n "$outdated_pkgs" ]; then
+              changed_pkgs="$(printf '%s\n%s\n' "$changed_pkgs" "$outdated_pkgs" \
+                  | tr ' ' '\n' \
+                  | sed '/^$/d' \
+                  | sort -u \
+                  | tr '\n' ' ')"
+              changed_pkgs="${changed_pkgs%% }"
+              echo "Outdated in ${BRANCH}, force-build: ${outdated_pkgs#" "}"
           fi
 
           # Final arch filtering before expensive build setup steps.
