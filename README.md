@@ -78,3 +78,4 @@ On first refresh, accept the repo signing key prompt.
 | `sdbus-cpp` | `all` |
 | `vesktop` | `x86_64` |
 | `zen-browser` | `x86_64`, `aarch64` |
+| `librewolf` | `x86_64`, `aarch64` |
