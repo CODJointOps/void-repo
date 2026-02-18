@@ -1,6 +1,6 @@
 # Template file for 'ente-auth'
 pkgname=ente-auth
-version=4.4.15
+version=4.4.17
 revision=1
 only_for_archs="x86_64"
 hostmakedepends="tar"
@@ -11,7 +11,7 @@ license="AGPL-3.0-only"
 homepage="https://ente.io/auth/"
 changelog="https://github.com/ente-io/ente/releases"
 distfiles="https://github.com/ente-io/ente/releases/download/auth-v${version}/ente-auth-v${version}-x86_64.deb"
-checksum=89fd2f93895c233f9c270dff7eff46a7f38504eee8e7829d4d48653a72d8a2fa
+checksum=4f3bcde329da4d1226dd4532a833b1989ad2cd49faad1123365d5438ed31c7ef
 nostrip=yes
 
 do_extract() {
