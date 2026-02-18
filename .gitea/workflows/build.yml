@@ -128,6 +128,7 @@ jobs:
 
           changed_pkgs=""
           removed_pkgs=""
+          touched_pkgs=""
           if [ -n "$base" ] && [ "$base" != "0000000000000000000000000000000000000000" ]; then
               # Collect all package names touched under srcpkgs/, including rename old/new paths.
               touched_pkgs=$(git diff --name-status "$base" "$tip" -- 'srcpkgs/*' \
@@ -181,6 +182,51 @@ jobs:
                   }
               ' "$file"
           }
+
+          # Guard against silent "content-only" template changes that keep the
+          # same pkgver (version_revision). Those won't produce a user-visible
+          # update, so require a version or revision bump.
+          needs_pkgver_bump=""
+          if [ -n "$base" ] && [ "$base" != "0000000000000000000000000000000000000000" ]; then
+              for pkg in $touched_pkgs; do
+                  new_tpl="srcpkgs/${pkg}/template"
+                  old_tpl_spec="${base}:srcpkgs/${pkg}/template"
+                  [ -f "$new_tpl" ] || continue
+                  if ! git cat-file -e "$old_tpl_spec" 2>/dev/null; then
+                      continue
+                  fi
+
+                  old_tpl="$(mktemp)"
+                  if ! git show "$old_tpl_spec" > "$old_tpl" 2>/dev/null; then
+                      rm -f "$old_tpl"
+                      continue
+                  fi
+
+                  if cmp -s "$old_tpl" "$new_tpl"; then
+                      rm -f "$old_tpl"
+                      continue
+                  fi
+
+                  old_ver="$(parse_tpl_var version "$old_tpl")"
+                  old_rev="$(parse_tpl_var revision "$old_tpl")"
+                  new_ver="$(parse_tpl_var version "$new_tpl")"
+                  new_rev="$(parse_tpl_var revision "$new_tpl")"
+                  [ -n "$old_rev" ] || old_rev="1"
+                  [ -n "$new_rev" ] || new_rev="1"
+
+                  if [ -n "$old_ver" ] && [ -n "$new_ver" ] && \
+                     [ "$old_ver" = "$new_ver" ] && [ "$old_rev" = "$new_rev" ]; then
+                      needs_pkgver_bump="$needs_pkgver_bump $pkg"
+                  fi
+
+                  rm -f "$old_tpl"
+              done
+          fi
+          needs_pkgver_bump="${needs_pkgver_bump#" "}"
+          needs_pkgver_bump="${needs_pkgver_bump%% }"
+          if [ -n "$needs_pkgver_bump" ]; then
+              echo "Template changed without pkgver bump: $needs_pkgver_bump"
+          fi
 
           arch_matches_list() {
               list="$1"
@@ -333,6 +379,19 @@ jobs:
 
           echo "pkgs=$changed_pkgs" >> "$GITHUB_OUTPUT"
           echo "removed=$removed_pkgs" >> "$GITHUB_OUTPUT"
+          echo "needs_pkgver_bump=$needs_pkgver_bump" >> "$GITHUB_OUTPUT"
+
+      - name: Enforce version/revision bump for changed templates
+        if: ${{ steps.changed.outputs.needs_pkgver_bump != '' }}
+        env:
+          NEEDS_BUMP: ${{ steps.changed.outputs.needs_pkgver_bump }}
+        run: |
+          echo "ERROR: these templates changed but kept the same version/revision:"
+          for pkg in $NEEDS_BUMP; do
+              echo "  - $pkg"
+          done
+          echo "Bump version or revision in each template, then push again."
+          exit 1
 
       - name: Checkout void-packages
         if: ${{ steps.changed.outputs.pkgs != '' || steps.changed.outputs.removed != '' }}
