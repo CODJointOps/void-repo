@@ -1,7 +1,7 @@
 # Template file for 'librewolf'
 pkgname=librewolf
 version=147.0.4
-revision=1
+revision=2
 _rev=1
 archs="x86_64 aarch64"
 hostmakedepends="tar xz"
@@ -47,11 +47,11 @@ do_install() {
 	ln -sf "/opt/${pkgname}/librewolf" "${DESTDIR}/usr/bin/librewolf"
 	ln -sf "/opt/${pkgname}/librewolf" "${DESTDIR}/usr/bin/librewolf-wayland"
 
-	vinstall browser/chrome/icons/default/default48.png 644 usr/share/pixmaps/librewolf.png
+	vinstall browser/chrome/icons/default/default48.png 644 usr/share/pixmaps librewolf.png
 	for size in 16 32 48 64 128; do
 		install -dm755 "${DESTDIR}/usr/share/icons/hicolor/${size}x${size}/apps"
 		vinstall "browser/chrome/icons/default/default${size}.png" 644 \
-			"usr/share/icons/hicolor/${size}x${size}/apps/librewolf.png"
+			"usr/share/icons/hicolor/${size}x${size}/apps" librewolf.png
 	done
 
 	ln -Ts /usr/share/hunspell "${DESTDIR}/opt/${pkgname}/dictionaries"
