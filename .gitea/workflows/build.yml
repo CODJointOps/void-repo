@@ -804,24 +804,65 @@ jobs:
           printf '*.xbps filter=lfs diff=lfs merge=lfs -text\n' > .gitattributes
 
           commit_count=0
+          original_remote_sha=""
+          if git ls-remote --exit-code --heads "$REMOTE" "$BRANCH" >/dev/null 2>&1; then
+              original_remote_sha="$(git ls-remote --heads "$REMOTE" "$BRANCH" | awk 'NR==1 {print $1}')"
+              echo "Recorded pre-publish ${BRANCH} head: ${original_remote_sha}"
+          else
+              echo "No existing remote ${BRANCH}; rollback target unavailable for first publish."
+          fi
 
           push_with_retry() {
               pushed=0
-              for attempt in 1 2 3; do
+              for attempt in 1 2 3 4 5; do
                   if git push --force "$REMOTE" "$BRANCH"; then
                       pushed=1
                       break
                   fi
-                  if [ "$attempt" -lt 3 ]; then
+                  if [ "$attempt" -lt 5 ]; then
                       delay=$((attempt * 15))
-                      echo "Push failed (attempt ${attempt}/3), retrying in ${delay}s..."
+                      echo "Push failed (attempt ${attempt}/5), retrying in ${delay}s..."
                       sleep "$delay"
                   fi
               done
               if [ "$pushed" -ne 1 ]; then
-                  echo "Push failed after 3 attempts."
+                  echo "Push failed after 5 attempts."
                   return 1
               fi
+          }
+
+          rollback_branch_with_retry() {
+              if [ -z "$original_remote_sha" ]; then
+                  echo "No pre-publish remote SHA recorded; cannot auto-rollback ${BRANCH}."
+                  return 1
+              fi
+              echo "Restoring ${BRANCH} to ${original_remote_sha}..."
+              restored=0
+              for attempt in 1 2 3 4 5; do
+                  if git push --force "$REMOTE" "${original_remote_sha}:refs/heads/${BRANCH}"; then
+                      restored=1
+                      break
+                  fi
+                  if [ "$attempt" -lt 5 ]; then
+                      delay=$((attempt * 15))
+                      echo "Rollback push failed (attempt ${attempt}/5), retrying in ${delay}s..."
+                      sleep "$delay"
+                  fi
+              done
+              if [ "$restored" -ne 1 ]; then
+                  echo "Rollback failed after 5 attempts."
+                  return 1
+              fi
+              echo "Rollback completed for ${BRANCH}."
+          }
+
+          safe_push_or_fail() {
+              if push_with_retry; then
+                  return 0
+              fi
+              echo "Publish push failed; attempting automatic rollback to keep ${BRANCH} consistent."
+              rollback_branch_with_retry || true
+              return 1
           }
 
           # Create one commit per changed package binary for easier history/debugging.
@@ -851,7 +892,7 @@ jobs:
               commit_count=$((commit_count + 1))
 
               # Push each package commit immediately to keep LFS uploads smaller.
-              push_with_retry
+              safe_push_or_fail
           done
 
           # Commit repository metadata and any non-binary leftovers.
@@ -859,7 +900,7 @@ jobs:
           if ! git diff --cached --quiet; then
               git commit -m "binpkg(${RESULT_NAME}): refresh metadata"
               commit_count=$((commit_count + 1))
-              push_with_retry
+              safe_push_or_fail
           fi
 
           if [ "$commit_count" -eq 0 ]; then
