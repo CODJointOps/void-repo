@@ -1,6 +1,6 @@
 # Template file for 'zen-browser'
 pkgname=zen-browser
-version=1.18.9b
+version=1.18.10b
 revision=1
 archs="x86_64 aarch64"
 hostmakedepends="curl xz"
@@ -13,11 +13,11 @@ changelog="https://github.com/zen-browser/desktop/releases"
 case "${XBPS_TARGET_MACHINE}" in
 x86_64*)
 	_upstream_arch=x86_64
-	_checksum=32249dc6cf6ab1794896ab7733e559ee59a7de5d74e129fef26e7dc1c4054f78
+	_checksum=4303f8d2d87ce2a933277cdfc951cf5a72d25fc9ba2c51ea9331f7630c8dbe38
 	;;
 aarch64*)
 	_upstream_arch=aarch64
-	_checksum=38a077e8d3c30607ea9c754fccf2799608feace440b47f8ff178b0918ce24dc8
+	_checksum=e03e0f2e43a5016db4bf21cde52671348fa3bb87698eea4e4ff355222c3885e8
 	;;
 *)
 	broken="No distfiles available for this target"
