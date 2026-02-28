@@ -1,5 +1,5 @@
---- a/src/core/socket/SocketHelpers.cpp	2026-02-04 06:08:13.000000000 -0500
-+++ b/src/core/socket/SocketHelpers.cpp	2026-02-14 10:54:52.924176663 -0500
+--- a/src/core/socket/SocketHelpers.cpp
++++ b/src/core/socket/SocketHelpers.cpp
 @@ -42,7 +42,8 @@
          if (sizeWritten < 0)
              return {.bad = true};
@@ -10,8 +10,8 @@
  
          // check for control
          cmsghdr* recvdCmsg = CMSG_FIRSTHDR(&msg);
---- a/src/core/message/messages/BindProtocol.cpp	2026-02-04 06:08:13.000000000 -0500
-+++ b/src/core/message/messages/BindProtocol.cpp	2026-02-14 10:54:52.926396824 -0500
+--- a/src/core/message/messages/BindProtocol.cpp
++++ b/src/core/message/messages/BindProtocol.cpp
 @@ -67,10 +67,12 @@
  
      m_data.emplace_back(HW_MESSAGE_MAGIC_TYPE_VARCHAR);
@@ -28,8 +28,8 @@
  
      std::memcpy(&m_data[m_data.size() - 4], &version, sizeof(version));
  
---- a/src/core/message/messages/FatalProtocolError.cpp	2026-02-04 06:08:13.000000000 -0500
-+++ b/src/core/message/messages/FatalProtocolError.cpp	2026-02-14 10:54:52.928325506 -0500
+--- a/src/core/message/messages/FatalProtocolError.cpp
++++ b/src/core/message/messages/FatalProtocolError.cpp
 @@ -61,7 +61,8 @@
          std::memcpy(&m_data[2], &obj->m_id, sizeof(obj->m_id));
      std::memcpy(&m_data[7], &errorId, sizeof(errorId));
@@ -41,8 +41,8 @@
 +    m_data.insert(m_data.end(), msg.begin(), msg.end());
      m_data.emplace_back(HW_MESSAGE_MAGIC_END);
  }
---- a/src/core/message/messages/HandshakeBegin.cpp	2026-02-04 06:08:13.000000000 -0500
-+++ b/src/core/message/messages/HandshakeBegin.cpp	2026-02-14 10:54:52.929912280 -0500
+--- a/src/core/message/messages/HandshakeBegin.cpp
++++ b/src/core/message/messages/HandshakeBegin.cpp
 @@ -58,7 +58,8 @@
          HW_MESSAGE_MAGIC_TYPE_UINT,
      };
@@ -53,8 +53,8 @@
  
      const size_t HEAD_SIZE = m_data.size();
  
---- a/src/core/message/messages/HandshakeProtocols.cpp	2026-02-04 06:08:13.000000000 -0500
-+++ b/src/core/message/messages/HandshakeProtocols.cpp	2026-02-14 10:54:52.931635532 -0500
+--- a/src/core/message/messages/HandshakeProtocols.cpp
++++ b/src/core/message/messages/HandshakeProtocols.cpp
 @@ -57,11 +57,13 @@
          HW_MESSAGE_MAGIC_TYPE_VARCHAR,
      };
@@ -72,8 +72,8 @@
      }
  
      m_data.emplace_back(HW_MESSAGE_MAGIC_END);
---- a/src/core/wireObject/IWireObject.cpp	2026-02-04 06:08:13.000000000 -0500
-+++ b/src/core/wireObject/IWireObject.cpp	2026-02-14 10:54:52.943273010 -0500
+--- a/src/core/wireObject/IWireObject.cpp
++++ b/src/core/wireObject/IWireObject.cpp
 @@ -118,8 +118,10 @@
              case HW_MESSAGE_MAGIC_TYPE_VARCHAR: {
                  data.emplace_back(HW_MESSAGE_MAGIC_TYPE_VARCHAR);
