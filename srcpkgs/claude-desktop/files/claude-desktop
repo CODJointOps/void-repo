@@ -1,0 +1,8 @@
+#!/bin/bash
+ELECTRON_ARGS=(/usr/lib/claude-desktop/app.asar)
+
+if [ -n "$WAYLAND_DISPLAY" ]; then
+	ELECTRON_ARGS+=(--enable-features=UseOzonePlatform,WaylandWindowDecorations --ozone-platform=wayland)
+fi
+
+exec electron35 "${ELECTRON_ARGS[@]}" "$@"
