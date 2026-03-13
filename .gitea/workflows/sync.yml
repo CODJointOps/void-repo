@@ -21,15 +21,21 @@ jobs:
         run: |
           set -e
           changed=false
+          sync_failed=false
           managed_file=$(mktemp)
           trap 'rm -f "$managed_file"' EXIT
+
+          mark_sync_failed() {
+              echo "ERROR: $1"
+              sync_failed=true
+          }
 
           sync_one_pkg() {
               pkgname="$1"
               srcdir="$2"
 
               if [ ! -f "$srcdir/template" ]; then
-                  echo "   WARNING: missing template for $pkgname in $srcdir, skipping"
+                  mark_sync_failed "missing template for $pkgname in $srcdir"
                   return
               fi
 
@@ -57,7 +63,7 @@ jobs:
               link_target="$2"
 
               if [ -z "$link_target" ]; then
-                  echo "   WARNING: empty symlink target for $pkgname, skipping"
+                  mark_sync_failed "empty symlink target for $pkgname"
                   return
               fi
 
@@ -102,7 +108,7 @@ jobs:
                       fi
                   done
                   if [ "$found" -eq 0 ]; then
-                      echo "   WARNING: $repo_url has srcpkgs/ but no package dirs, skipping"
+                      mark_sync_failed "$repo_url has srcpkgs/ but no package dirs"
                   fi
                   return
               fi
@@ -118,7 +124,7 @@ jobs:
                   return
               fi
 
-              echo "   WARNING: no srcpkgs/ or template found in $repo_url, skipping"
+              mark_sync_failed "no srcpkgs/ or template found in $repo_url"
           }
 
           while IFS= read -r raw_line || [ -n "$raw_line" ]; do
@@ -151,7 +157,7 @@ jobs:
               esac
 
               if [ -z "$mode" ] || [ -z "$repo_url" ]; then
-                  echo "WARNING: invalid packages.conf line: $raw_line"
+                  mark_sync_failed "invalid packages.conf line: $raw_line"
                   continue
               fi
 
@@ -163,7 +169,7 @@ jobs:
 
               tmpdir=$(mktemp -d)
               if ! git clone --depth 1 "$repo_url" "$tmpdir"; then
-                  echo "   WARNING: failed to clone $repo_url, skipping"
+                  mark_sync_failed "failed to clone $repo_url"
                   rm -rf "$tmpdir"
                   continue
               fi
@@ -187,6 +193,11 @@ jobs:
 
               rm -rf "$tmpdir"
           done < packages.conf
+
+          if [ "$sync_failed" = true ]; then
+              echo "Sync failed before cleanup; refusing to delete or commit managed packages"
+              exit 1
+          fi
 
           # Remove packages no longer declared in packages.conf.
           for d in srcpkgs/*; do
