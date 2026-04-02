@@ -816,13 +816,14 @@ jobs:
               pushed=0
               for attempt in 1 2 3 4 5; do
                   if [ -n "$original_remote_sha" ]; then
-                      if git push --force-with-lease=refs/heads/${BRANCH}:${original_remote_sha} \
+                      if git push --no-verify \
+                          --force-with-lease=refs/heads/${BRANCH}:${original_remote_sha} \
                           "$REMOTE" "$BRANCH:refs/heads/${BRANCH}"; then
                           pushed=1
                           break
                       fi
                   else
-                      if git push "$REMOTE" "$BRANCH:refs/heads/${BRANCH}"; then
+                      if git push --no-verify "$REMOTE" "$BRANCH:refs/heads/${BRANCH}"; then
                           pushed=1
                           break
                       fi
@@ -839,6 +840,42 @@ jobs:
               fi
           }
 
+          push_lfs_objects_with_retry() {
+              lfs_list="$(mktemp)"
+
+              git lfs ls-files -l > "$lfs_list"
+              if [ ! -s "$lfs_list" ]; then
+                  rm -f "$lfs_list"
+                  echo "No LFS objects to upload."
+                  return 0
+              fi
+
+              while read -r oid marker path; do
+                  [ -n "$oid" ] || continue
+
+                  uploaded=0
+                  for attempt in 1 2 3 4 5; do
+                      if git lfs push --object-id "$REMOTE" "$oid"; then
+                          uploaded=1
+                          break
+                      fi
+                      if [ "$attempt" -lt 5 ]; then
+                          delay=$((attempt * 15))
+                          echo "LFS upload failed for ${path} (attempt ${attempt}/5), retrying in ${delay}s..."
+                          sleep "$delay"
+                      fi
+                  done
+
+                  if [ "$uploaded" -ne 1 ]; then
+                      rm -f "$lfs_list"
+                      echo "LFS upload failed after 5 attempts for ${path} (${oid})."
+                      return 1
+                  fi
+              done < "$lfs_list"
+
+              rm -f "$lfs_list"
+          }
+
           git add -A
           if git diff --cached --quiet; then
               echo "No changes to push."
@@ -848,4 +885,5 @@ jobs:
           # Publish a complete branch snapshot in one commit so a transient
           # push/LFS failure cannot strand the remote branch in a partial state.
           git commit -m "binpkg(${RESULT_NAME}): refresh repository snapshot"
+          push_lfs_objects_with_retry
           push_with_retry
