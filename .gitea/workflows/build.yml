@@ -5,6 +5,7 @@ on:
     branches:
       - master
     paths:
+      - '.gitea/workflows/build.yml'
       - 'srcpkgs/**'
   workflow_dispatch:
 
@@ -803,21 +804,28 @@ jobs:
           # Enable LFS for .xbps files on this branch
           printf '*.xbps filter=lfs diff=lfs merge=lfs -text\n' > .gitattributes
 
-          commit_count=0
           original_remote_sha=""
           if git ls-remote --exit-code --heads "$REMOTE" "$BRANCH" >/dev/null 2>&1; then
               original_remote_sha="$(git ls-remote --heads "$REMOTE" "$BRANCH" | awk 'NR==1 {print $1}')"
               echo "Recorded pre-publish ${BRANCH} head: ${original_remote_sha}"
           else
-              echo "No existing remote ${BRANCH}; rollback target unavailable for first publish."
+              echo "No existing remote ${BRANCH}; first publish will create it."
           fi
 
           push_with_retry() {
               pushed=0
               for attempt in 1 2 3 4 5; do
-                  if git push --force "$REMOTE" "$BRANCH"; then
-                      pushed=1
-                      break
+                  if [ -n "$original_remote_sha" ]; then
+                      if git push --force-with-lease=refs/heads/${BRANCH}:${original_remote_sha} \
+                          "$REMOTE" "$BRANCH:refs/heads/${BRANCH}"; then
+                          pushed=1
+                          break
+                      fi
+                  else
+                      if git push "$REMOTE" "$BRANCH:refs/heads/${BRANCH}"; then
+                          pushed=1
+                          break
+                      fi
                   fi
                   if [ "$attempt" -lt 5 ]; then
                       delay=$((attempt * 15))
@@ -831,79 +839,13 @@ jobs:
               fi
           }
 
-          rollback_branch_with_retry() {
-              if [ -z "$original_remote_sha" ]; then
-                  echo "No pre-publish remote SHA recorded; cannot auto-rollback ${BRANCH}."
-                  return 1
-              fi
-              echo "Restoring ${BRANCH} to ${original_remote_sha}..."
-              restored=0
-              for attempt in 1 2 3 4 5; do
-                  if git push --force "$REMOTE" "${original_remote_sha}:refs/heads/${BRANCH}"; then
-                      restored=1
-                      break
-                  fi
-                  if [ "$attempt" -lt 5 ]; then
-                      delay=$((attempt * 15))
-                      echo "Rollback push failed (attempt ${attempt}/5), retrying in ${delay}s..."
-                      sleep "$delay"
-                  fi
-              done
-              if [ "$restored" -ne 1 ]; then
-                  echo "Rollback failed after 5 attempts."
-                  return 1
-              fi
-              echo "Rollback completed for ${BRANCH}."
-          }
-
-          safe_push_or_fail() {
-              if push_with_retry; then
-                  return 0
-              fi
-              echo "Publish push failed; attempting automatic rollback to keep ${BRANCH} consistent."
-              rollback_branch_with_retry || true
-              return 1
-          }
-
-          # Create one commit per changed package binary for easier history/debugging.
-          for f in ./*.xbps; do
-              [ -e "$f" ] || continue
-              base=$(basename "$f")
-              pkgver=$(xbps-uhelper binpkgver "$base" 2>/dev/null || true)
-              pkgname=$(xbps-uhelper getpkgname "$pkgver" 2>/dev/null || true)
-
-              git add -A -- "$f"
-              for p in "${f%.xbps}.xbps.sig" "${f%.xbps}.xbps.sig2"; do
-                  [ -e "$p" ] || continue
-                  git add -A -- "$p"
-              done
-
-              if git diff --cached --quiet; then
-                  continue
-              fi
-
-              if [ -n "$pkgver" ]; then
-                  git commit -m "binpkg(${RESULT_NAME}): update ${pkgver}"
-              elif [ -n "$pkgname" ]; then
-                  git commit -m "binpkg(${RESULT_NAME}): update ${pkgname}"
-              else
-                  git commit -m "binpkg(${RESULT_NAME}): update ${base%.xbps}"
-              fi
-              commit_count=$((commit_count + 1))
-
-              # Push each package commit immediately to keep LFS uploads smaller.
-              safe_push_or_fail
-          done
-
-          # Commit repository metadata and any non-binary leftovers.
           git add -A
-          if ! git diff --cached --quiet; then
-              git commit -m "binpkg(${RESULT_NAME}): refresh metadata"
-              commit_count=$((commit_count + 1))
-              safe_push_or_fail
-          fi
-
-          if [ "$commit_count" -eq 0 ]; then
+          if git diff --cached --quiet; then
               echo "No changes to push."
               exit 0
           fi
+
+          # Publish a complete branch snapshot in one commit so a transient
+          # push/LFS failure cannot strand the remote branch in a partial state.
+          git commit -m "binpkg(${RESULT_NAME}): refresh repository snapshot"
+          push_with_retry
