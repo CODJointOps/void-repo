@@ -2,7 +2,7 @@
 pkgname=librewolf
 version=149.0.2
 revision=1
-_rev=1
+_rev=2
 archs="x86_64 aarch64"
 hostmakedepends="tar xz"
 depends="desktop-file-utils hicolor-icon-theme pciutils"
@@ -17,11 +17,11 @@ _tag="${version}-${_rev}"
 case "${XBPS_TARGET_MACHINE}" in
 x86_64)
 	_upstream_arch=x86_64
-	_checksum=3e362aff47e97809271a5e602edc2b911378b43eb188eb1f818b1f45a80b56e4
+	_checksum=07381231e007137b773f92ff5e3d318c971fb05937508625ac9bd01a86a1a4cd
 	;;
 aarch64)
 	_upstream_arch=arm64
-	_checksum=20d863601c9f842cbed6ca0bd9977005b53591c346737ccd18291b190f6ebefd
+	_checksum=e3d38379c4dbfcd7936bc8b007c7f85f31aa3df15324fbc4811273f20b2818db
 	;;
 *)
 	broken="No distfiles available for ${XBPS_TARGET_MACHINE}"
