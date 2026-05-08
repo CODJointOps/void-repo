@@ -687,7 +687,7 @@ jobs:
           fi
 
       - name: Sign
-        if: ${{ steps.build_step.outputs.built != '' || steps.changed.outputs.removed != '' }}
+        if: ${{ steps.build_step.outputs.failed == '' && (steps.build_step.outputs.built != '' || steps.changed.outputs.removed != '') }}
         env:
           PRIV_KEY: ${{ secrets.PRIV_KEY }}
           XBPS_ARCH: ${{ matrix.config.arch }}
@@ -795,7 +795,7 @@ jobs:
           rm -f private.pem
 
       - name: Push binpkgs branch (per arch)
-        if: ${{ steps.build_step.outputs.built != '' || steps.changed.outputs.removed != '' }}
+        if: ${{ steps.build_step.outputs.failed == '' && (steps.build_step.outputs.built != '' || steps.changed.outputs.removed != '') }}
         env:
           REPO_OWNER: ${{ gitea.repository_owner }}
           REPO_NAME: ${{ gitea.event.repository.name }}
