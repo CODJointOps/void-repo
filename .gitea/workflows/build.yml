@@ -6,6 +6,8 @@ on:
       - master
     paths:
       - '.gitea/workflows/build.yml'
+      - 'shlibs_append'
+      - 'shlibs_remove'
       - 'srcpkgs/**'
   workflow_dispatch:
 
