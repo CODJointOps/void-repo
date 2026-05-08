@@ -132,6 +132,7 @@ jobs:
           changed_pkgs=""
           removed_pkgs=""
           touched_pkgs=""
+          touched_shlibs=""
           if [ -n "$base" ] && [ "$base" != "0000000000000000000000000000000000000000" ]; then
               # Collect all package names touched under srcpkgs/, including rename old/new paths.
               touched_pkgs=$(git diff --name-status "$base" "$tip" -- 'srcpkgs/*' \
@@ -149,6 +150,10 @@ jobs:
                       removed_pkgs="$removed_pkgs $pkg"
                   fi
               done
+
+              touched_shlibs=$(git diff --name-only "$base" "$tip" -- shlibs_append shlibs_remove \
+                  | sed '/^$/d' \
+                  | sort -u)
           else
               echo "No valid base commit; changed package set will be empty unless missing-package backfill adds entries."
           fi
@@ -282,6 +287,62 @@ jobs:
           # Ensure packages missing from the arch repo branch are retried even
           # when templates didn't change (e.g. previously failed builds).
           all_pkgs=$(find srcpkgs -maxdepth 1 -mindepth 1 -type d -printf "%f\n" | sort -u)
+
+          if [ -n "$touched_shlibs" ]; then
+              shlib_seed_pkgs=""
+              for file in shlibs_append shlibs_remove; do
+                  [ -f "$file" ] || continue
+                  while read -r _ pkgver _rest; do
+                      [ -n "$pkgver" ] || continue
+                      pkg="$(xbps-uhelper getpkgname "$pkgver" 2>/dev/null || true)"
+                      [ -n "$pkg" ] || continue
+                      [ -d "srcpkgs/$pkg" ] || continue
+                      shlib_seed_pkgs="$shlib_seed_pkgs $pkg"
+                  done < "$file"
+              done
+
+              shlib_affected_pkgs="$(printf '%s\n' "$shlib_seed_pkgs" \
+                  | tr ' ' '\n' \
+                  | sed '/^$/d' \
+                  | sort -u \
+                  | tr '\n' ' ')"
+              shlib_affected_pkgs="${shlib_affected_pkgs%% }"
+
+              changed_graph=1
+              while [ "$changed_graph" -eq 1 ]; do
+                  changed_graph=0
+                  for pkg in $all_pkgs; do
+                      printf '%s\n' "$shlib_affected_pkgs" | tr ' ' '\n' | grep -Fqx "$pkg" && continue
+                      tpl="srcpkgs/${pkg}/template"
+                      [ -f "$tpl" ] || continue
+
+                      for dep in $shlib_affected_pkgs; do
+                          if grep -Eq "(^|[[:space:]\"'])${dep}([[:space:]\"'<>=]|$)" "$tpl"; then
+                              shlib_affected_pkgs="$shlib_affected_pkgs $pkg"
+                              changed_graph=1
+                              break
+                          fi
+                      done
+                  done
+                  shlib_affected_pkgs="$(printf '%s\n' "$shlib_affected_pkgs" \
+                      | tr ' ' '\n' \
+                      | sed '/^$/d' \
+                      | sort -u \
+                      | tr '\n' ' ')"
+                  shlib_affected_pkgs="${shlib_affected_pkgs%% }"
+              done
+
+              if [ -n "$shlib_affected_pkgs" ]; then
+                  changed_pkgs="$(printf '%s\n%s\n' "$changed_pkgs" "$shlib_affected_pkgs" \
+                      | tr ' ' '\n' \
+                      | sed '/^$/d' \
+                      | sort -u \
+                      | tr '\n' ' ')"
+                  changed_pkgs="${changed_pkgs%% }"
+                  echo "Shlib metadata changed, force-build affected packages: $shlib_affected_pkgs"
+              fi
+          fi
+
           GIT_USER="${ACCESS_GIT_USER:-$REPO_OWNER}"
           BRANCH="repository-${RESULT_NAME}"
           REMOTE_PUBLIC="https://git.deadzone.lol/${REPO_OWNER}/${REPO_NAME}.git"
