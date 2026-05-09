@@ -13,14 +13,16 @@ Main repo:
 ### Bash / Zsh
 
 ```bash
-ARCH="$(xbps-uhelper arch)"; echo "repository=https://git.deadzone.lol/Wizzard/void-repo/media/branch/repository-${ARCH}" | sudo tee /etc/xbps.d/20-void-repo.conf
+sudo rm -f /etc/xbps.d/20-void-repo.conf
+ARCH="$(xbps-uhelper arch)"; echo "repository=https://git.deadzone.lol/Wizzard/void-repo/media/branch/repository-${ARCH}" | sudo tee /etc/xbps.d/00-00-void-repo.conf
 sudo xbps-install -S
 ```
 
 ### Fish
 
 ```fish
-echo "repository=https://git.deadzone.lol/Wizzard/void-repo/media/branch/repository-(xbps-uhelper arch)" | sudo tee /etc/xbps.d/20-void-repo.conf
+sudo rm -f /etc/xbps.d/20-void-repo.conf
+echo "repository=https://git.deadzone.lol/Wizzard/void-repo/media/branch/repository-(xbps-uhelper arch)" | sudo tee /etc/xbps.d/00-00-void-repo.conf
 sudo xbps-install -S
 ```
 
@@ -29,16 +31,22 @@ sudo xbps-install -S
 #### Bash / Zsh
 
 ```bash
-ARCH="$(xbps-uhelper arch)"; echo "repository=https://raw.githubusercontent.com/CODJointOps/void-repo/repository-${ARCH}" | sudo tee /etc/xbps.d/20-void-repo.conf
+sudo rm -f /etc/xbps.d/20-void-repo.conf
+ARCH="$(xbps-uhelper arch)"; echo "repository=https://raw.githubusercontent.com/CODJointOps/void-repo/repository-${ARCH}" | sudo tee /etc/xbps.d/00-00-void-repo.conf
 sudo xbps-install -S
 ```
 
 #### Fish
 
 ```fish
-echo "repository=https://raw.githubusercontent.com/CODJointOps/void-repo/repository-(xbps-uhelper arch)" | sudo tee /etc/xbps.d/20-void-repo.conf
+sudo rm -f /etc/xbps.d/20-void-repo.conf
+echo "repository=https://raw.githubusercontent.com/CODJointOps/void-repo/repository-(xbps-uhelper arch)" | sudo tee /etc/xbps.d/00-00-void-repo.conf
 sudo xbps-install -S
 ```
+
+The `00-00-void-repo.conf` name is intentional. XBPS picks the first matching
+package unless `bestmatching=true` is enabled, so this repository must be loaded
+before the official Void repos for packages that also exist upstream.
 
 Install whatever you want after that:
 
