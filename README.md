@@ -2,7 +2,8 @@
 
 ## What This Is
 
-This repository is the central home for the Void Linux packages I maintain. It contains the templates, build automation, and published binary repository branches for the packages I create.
+This repo holds the Void package templates I maintain, the build workflow, and
+the published binary repo branches.
 
 Main repo:
 
@@ -14,7 +15,8 @@ Main repo:
 
 ```bash
 sudo rm -f /etc/xbps.d/20-void-repo.conf
-ARCH="$(xbps-uhelper arch)"; echo "repository=https://git.deadzone.lol/Wizzard/void-repo/media/branch/repository-${ARCH}" | sudo tee /etc/xbps.d/00-00-void-repo.conf
+ARCH="$(xbps-uhelper arch)"
+echo "repository=https://git.deadzone.lol/Wizzard/void-repo/media/branch/repository-${ARCH}" | sudo tee /etc/xbps.d/00-00-void-repo.conf
 sudo xbps-install -S
 ```
 
@@ -22,7 +24,8 @@ sudo xbps-install -S
 
 ```fish
 sudo rm -f /etc/xbps.d/20-void-repo.conf
-echo "repository=https://git.deadzone.lol/Wizzard/void-repo/media/branch/repository-(xbps-uhelper arch)" | sudo tee /etc/xbps.d/00-00-void-repo.conf
+set arch (xbps-uhelper arch)
+echo "repository=https://git.deadzone.lol/Wizzard/void-repo/media/branch/repository-$arch" | sudo tee /etc/xbps.d/00-00-void-repo.conf
 sudo xbps-install -S
 ```
 
@@ -32,7 +35,8 @@ sudo xbps-install -S
 
 ```bash
 sudo rm -f /etc/xbps.d/20-void-repo.conf
-ARCH="$(xbps-uhelper arch)"; echo "repository=https://raw.githubusercontent.com/CODJointOps/void-repo/repository-${ARCH}" | sudo tee /etc/xbps.d/00-00-void-repo.conf
+ARCH="$(xbps-uhelper arch)"
+echo "repository=https://raw.githubusercontent.com/CODJointOps/void-repo/repository-${ARCH}" | sudo tee /etc/xbps.d/00-00-void-repo.conf
 sudo xbps-install -S
 ```
 
@@ -40,13 +44,13 @@ sudo xbps-install -S
 
 ```fish
 sudo rm -f /etc/xbps.d/20-void-repo.conf
-echo "repository=https://raw.githubusercontent.com/CODJointOps/void-repo/repository-(xbps-uhelper arch)" | sudo tee /etc/xbps.d/00-00-void-repo.conf
+set arch (xbps-uhelper arch)
+echo "repository=https://raw.githubusercontent.com/CODJointOps/void-repo/repository-$arch" | sudo tee /etc/xbps.d/00-00-void-repo.conf
 sudo xbps-install -S
 ```
 
-The `00-00-void-repo.conf` name is intentional. XBPS picks the first matching
-package unless `bestmatching=true` is enabled, so this repository must be loaded
-before the official Void repos for packages that also exist upstream.
+Keep this repo before the official Void repos. XBPS otherwise may pick older
+official builds for packages that exist in both places.
 
 Install whatever you want after that:
 
