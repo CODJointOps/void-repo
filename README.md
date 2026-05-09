@@ -14,19 +14,17 @@ Main repo:
 ### Bash / Zsh
 
 ```bash
-sudo rm -f /etc/xbps.d/20-void-repo.conf
 ARCH="$(xbps-uhelper arch)"
-echo "repository=https://git.deadzone.lol/Wizzard/void-repo/media/branch/repository-${ARCH}" | sudo tee /etc/xbps.d/00-00-void-repo.conf
-sudo xbps-install -S
+printf 'repository=%s\n' "https://git.deadzone.lol/Wizzard/void-repo/media/branch/repository-${ARCH}" | doas tee /etc/xbps.d/00-00-void-repo.conf
+doas xbps-install -S
 ```
 
 ### Fish
 
 ```fish
-sudo rm -f /etc/xbps.d/20-void-repo.conf
-set arch (xbps-uhelper arch)
-echo "repository=https://git.deadzone.lol/Wizzard/void-repo/media/branch/repository-$arch" | sudo tee /etc/xbps.d/00-00-void-repo.conf
-sudo xbps-install -S
+set -l arch (xbps-uhelper arch)
+printf 'repository=%s\n' "https://git.deadzone.lol/Wizzard/void-repo/media/branch/repository-$arch" | doas tee /etc/xbps.d/00-00-void-repo.conf
+doas xbps-install -S
 ```
 
 ### GitHub Mirror
@@ -34,19 +32,17 @@ sudo xbps-install -S
 #### Bash / Zsh
 
 ```bash
-sudo rm -f /etc/xbps.d/20-void-repo.conf
 ARCH="$(xbps-uhelper arch)"
-echo "repository=https://raw.githubusercontent.com/CODJointOps/void-repo/repository-${ARCH}" | sudo tee /etc/xbps.d/00-00-void-repo.conf
-sudo xbps-install -S
+printf 'repository=%s\n' "https://github.com/CODJointOps/void-repo/raw/refs/heads/repository-${ARCH}" | doas tee /etc/xbps.d/00-00-void-repo.conf
+doas xbps-install -S
 ```
 
 #### Fish
 
 ```fish
-sudo rm -f /etc/xbps.d/20-void-repo.conf
-set arch (xbps-uhelper arch)
-echo "repository=https://raw.githubusercontent.com/CODJointOps/void-repo/repository-$arch" | sudo tee /etc/xbps.d/00-00-void-repo.conf
-sudo xbps-install -S
+set -l arch (xbps-uhelper arch)
+printf 'repository=%s\n' "https://github.com/CODJointOps/void-repo/raw/refs/heads/repository-$arch" | doas tee /etc/xbps.d/00-00-void-repo.conf
+doas xbps-install -S
 ```
 
 Keep this repo before the official Void repos. XBPS otherwise may pick older
@@ -55,7 +51,7 @@ official builds for packages that exist in both places.
 Install whatever you want after that:
 
 ```bash
-sudo xbps-install zen-browser vesktop bitwarden ente-auth mullvad-vpn
+doas xbps-install zen-browser vesktop bitwarden ente-auth mullvad-vpn
 ```
 
 On first refresh, accept the repo signing key prompt.
