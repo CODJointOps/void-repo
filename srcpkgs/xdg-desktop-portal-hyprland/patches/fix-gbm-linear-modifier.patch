@@ -15,7 +15,7 @@
 +            // Attempt 2+: skip — the consumer rejected the DCC fixation, so fall through to
 +            // the unconditional LINEAR path which is universally importable.
 +            gbm_bo*          bo = nullptr;
-+            if (PSTREAM->dmaBufRetries < 2) {
++            if (false) { // skip DCC tiled path; consumers (chromium webrtc) reject AMD DCC modifiers, force LINEAR below
 +                bo = gbm_bo_create_with_modifiers2(g_pPortalManager->m_sWaylandConnection.gbmDevice, PSTREAM->pSession->sharingData.frameInfoDMA.w,
 +                                                   PSTREAM->pSession->sharingData.frameInfoDMA.h, PSTREAM->pSession->sharingData.frameInfoDMA.fmt, modifiers, n_modifiers, flags);
 +                if (bo) {
