@@ -66,6 +66,9 @@ do_install() {
     mkdir -p ${PKGDESTDIR}/opt/Bitwarden
     cp -a ${wrksrc}/opt/Bitwarden/* ${PKGDESTDIR}/opt/Bitwarden/
 
+    # drop bundled musl prebuilds; unusable on glibc and break shlib scanning
+    find ${PKGDESTDIR}/opt/Bitwarden -name '*.musl.node' -delete
+
     ln -sf /opt/Bitwarden/bitwarden ${PKGDESTDIR}/usr/bin/bitwarden
 
     if [ -f ${PKGDESTDIR}/opt/Bitwarden/chrome-sandbox ]; then
