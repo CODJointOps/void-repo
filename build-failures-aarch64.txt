@@ -1,0 +1,2 @@
+hyprland-qt-support
+hyprland-guiutils
