@@ -62,11 +62,33 @@ jobs:
           done
           git lfs install
 
+          # If an internal git endpoint is reachable, prefer it over the
+          # public hostname.
+          if [ -n "${INTERNAL_GIT_URL:-}" ] && [ -n "${PUBLIC_GIT_URL:-}" ]; then
+              git config --global url."${INTERNAL_GIT_URL%/}/".insteadOf "${PUBLIC_GIT_URL%/}/"
+              echo "Routing git/LFS via internal endpoint."
+          fi
+
+          # Generous timeouts so a slow link or long object does not abort
+          # mid-transfer.
+          git config --global lfs.activitytimeout 600
+          git config --global lfs.dialtimeout 60
+          git config --global lfs.tlstimeout 60
+          git config --global lfs.keepalive 60
+          git config --global lfs.concurrenttransfers 2
+          git config --global lfs.transfer.maxretries 8
+          git config --global lfs.transfer.maxretrydelay 30
+          git config --global http.lowSpeedLimit 1000
+          git config --global http.lowSpeedTime 600
+
       - name: Checkout this repo
         env:
           ACCESS_GIT: ${{ secrets.ACCESS_GIT }}
           ACCESS_GIT_USER: ${{ secrets.ACCESS_GIT_USER }}
           REPO_OWNER: ${{ gitea.repository_owner }}
+          # master has no LFS payloads (only repository-* branches do); skip
+          # smudge so a stray pointer can never block the source checkout.
+          GIT_LFS_SKIP_SMUDGE: "1"
         run: |
           GIT_USER="${ACCESS_GIT_USER:-$REPO_OWNER}"
           REMOTE_PUBLIC="https://git.deadzone.lol/${{ gitea.repository }}.git"
@@ -653,6 +675,9 @@ jobs:
           REPO_OWNER: ${{ gitea.repository_owner }}
           REPO_NAME: ${{ gitea.event.repository.name }}
           RESULT_NAME: ${{ matrix.config.arch }}
+          # Only appending a plaintext failures file; .xbps payloads are
+          # not needed. Skip smudge so large LFS objects do not block.
+          GIT_LFS_SKIP_SMUDGE: "1"
         run: |
           set -e
           cd extra
@@ -719,7 +744,28 @@ jobs:
           rm -rf ./*
 
           if git ls-remote --exit-code --heads "$REMOTE" "$BRANCH" >/dev/null 2>&1; then
-              git clone --depth 1 --branch "$BRANCH" "$REMOTE" /tmp/oldrepo
+              # Two-phase fetch so LFS stalls do not waste the whole clone.
+              # Phase 1: pointers only. Phase 2: pull payloads with retry.
+              rm -rf /tmp/oldrepo
+              GIT_LFS_SKIP_SMUDGE=1 git clone --depth 1 --branch "$BRANCH" "$REMOTE" /tmp/oldrepo
+
+              (
+                  cd /tmp/oldrepo
+                  pulled=0
+                  for attempt in 1 2 3 4 5; do
+                      if git lfs pull; then
+                          pulled=1
+                          break
+                      fi
+                      echo "git lfs pull failed (attempt ${attempt}/5); retrying after ${attempt}0s..."
+                      sleep $((attempt * 10))
+                  done
+                  if [ "$pulled" -ne 1 ]; then
+                      echo "ERROR: git lfs pull failed 5 times."
+                      exit 1
+                  fi
+              )
+
               cp -v /tmp/oldrepo/*.${RESULT_NAME}.xbps . 2>/dev/null || true
               cp -v /tmp/oldrepo/*.noarch.xbps . 2>/dev/null || true
               cp -v /tmp/oldrepo/*.${RESULT_NAME}.xbps.sig . 2>/dev/null || true
