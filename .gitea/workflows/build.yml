@@ -63,10 +63,10 @@ jobs:
           git lfs install
 
           # If an internal git endpoint is reachable, prefer it over the
-          # public hostname.
+          # public hostname for both git protocol and LFS transfers.
           if [ -n "${INTERNAL_GIT_URL:-}" ] && [ -n "${PUBLIC_GIT_URL:-}" ]; then
               git config --global url."${INTERNAL_GIT_URL%/}/".insteadOf "${PUBLIC_GIT_URL%/}/"
-              echo "Routing git/LFS via internal endpoint."
+              echo "Routing git/LFS via ${INTERNAL_GIT_URL}."
           fi
 
           # Generous timeouts so a slow link or long object does not abort
