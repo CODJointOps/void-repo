@@ -52,9 +52,32 @@ jobs:
           REPO_FULL: ${{ gitea.repository }}
         run: |
           GIT_USER="${ACCESS_GIT_USER:-$REPO_OWNER}"
-          printf "%s\n" \
-            "https://${GIT_USER}:${ACCESS_GIT}@git.deadzone.lol/${REPO_FULL}.git" \
-            "https://${GIT_USER}:${ACCESS_GIT}@git.deadzone.lol" > ~/.git-credentials
+
+          # Resolve git scheme/host once. When an INTERNAL_GIT_URL is provided
+          # to the runner, all subsequent steps build remote URLs against it
+          # (and a matching credential entry is written) so traffic stays on
+          # the LAN. Exported via $GITHUB_ENV so later steps see them.
+          if [ -n "${INTERNAL_GIT_URL:-}" ]; then
+              GIT_SCHEME=${INTERNAL_GIT_URL%%://*}
+              GIT_HOST=${INTERNAL_GIT_URL#*://}
+              GIT_HOST=${GIT_HOST%/}
+              echo "Routing git/LFS via internal endpoint."
+          else
+              GIT_SCHEME=https
+              GIT_HOST=git.deadzone.lol
+          fi
+          echo "GIT_SCHEME=$GIT_SCHEME" >> "$GITHUB_ENV"
+          echo "GIT_HOST=$GIT_HOST" >> "$GITHUB_ENV"
+          echo "GIT_USER=$GIT_USER" >> "$GITHUB_ENV"
+
+          # Credential entries for both resolved endpoint and public hostname,
+          # so LFS Batch responses with absolute public URLs still authenticate.
+          {
+              printf "%s\n" "${GIT_SCHEME}://${GIT_USER}:${ACCESS_GIT}@${GIT_HOST}/${REPO_FULL}.git"
+              printf "%s\n" "${GIT_SCHEME}://${GIT_USER}:${ACCESS_GIT}@${GIT_HOST}"
+              printf "%s\n" "https://${GIT_USER}:${ACCESS_GIT}@git.deadzone.lol/${REPO_FULL}.git"
+              printf "%s\n" "https://${GIT_USER}:${ACCESS_GIT}@git.deadzone.lol"
+          } > ~/.git-credentials
           git config --global credential.helper store
           git config --global credential.useHttpPath false
           for key in $(git config --global --name-only --get-regexp '^http\\..*\\.extraheader$' 2>/dev/null || true); do
@@ -62,11 +85,10 @@ jobs:
           done
           git lfs install
 
-          # If an internal git endpoint is reachable, prefer it over the
-          # public hostname for both git protocol and LFS transfers.
+          # Force LFS batch URLs and any inadvertent public-hostname clone to
+          # be rewritten onto the internal endpoint as well.
           if [ -n "${INTERNAL_GIT_URL:-}" ] && [ -n "${PUBLIC_GIT_URL:-}" ]; then
               git config --global url."${INTERNAL_GIT_URL%/}/".insteadOf "${PUBLIC_GIT_URL%/}/"
-              echo "Routing git/LFS via ${INTERNAL_GIT_URL}."
           fi
 
           # Generous timeouts so a slow link or long object does not abort
@@ -91,8 +113,8 @@ jobs:
           GIT_LFS_SKIP_SMUDGE: "1"
         run: |
           GIT_USER="${ACCESS_GIT_USER:-$REPO_OWNER}"
-          REMOTE_PUBLIC="https://git.deadzone.lol/${{ gitea.repository }}.git"
-          REMOTE_AUTH="https://${GIT_USER}:${ACCESS_GIT}@git.deadzone.lol/${{ gitea.repository }}.git"
+          REMOTE_PUBLIC="${GIT_SCHEME:-https}://${GIT_HOST:-git.deadzone.lol}/${{ gitea.repository }}.git"
+          REMOTE_AUTH="${GIT_SCHEME:-https}://${GIT_USER}:${ACCESS_GIT}@${GIT_HOST:-git.deadzone.lol}/${{ gitea.repository }}.git"
 
           cloned=0
           for attempt in 1 2 3; do
@@ -367,8 +389,8 @@ jobs:
 
           GIT_USER="${ACCESS_GIT_USER:-$REPO_OWNER}"
           BRANCH="repository-${RESULT_NAME}"
-          REMOTE_PUBLIC="https://git.deadzone.lol/${REPO_OWNER}/${REPO_NAME}.git"
-          REMOTE_AUTH="https://${GIT_USER}:${ACCESS_GIT}@git.deadzone.lol/${REPO_OWNER}/${REPO_NAME}.git"
+          REMOTE_PUBLIC="${GIT_SCHEME:-https}://${GIT_HOST:-git.deadzone.lol}/${REPO_OWNER}/${REPO_NAME}.git"
+          REMOTE_AUTH="${GIT_SCHEME:-https}://${GIT_USER}:${ACCESS_GIT}@${GIT_HOST:-git.deadzone.lol}/${REPO_OWNER}/${REPO_NAME}.git"
           missing_pkgs=""
           outdated_pkgs=""
 
@@ -686,7 +708,7 @@ jobs:
 
           GIT_USER="${ACCESS_GIT_USER:-$REPO_OWNER}"
           BRANCH="repository-${RESULT_NAME}"
-          REMOTE="https://$GIT_USER:${ACCESS_GIT}@git.deadzone.lol/${REPO_OWNER}/${REPO_NAME}.git"
+          REMOTE="${GIT_SCHEME:-https}://$GIT_USER:${ACCESS_GIT}@${GIT_HOST:-git.deadzone.lol}/${REPO_OWNER}/${REPO_NAME}.git"
 
           if git ls-remote --exit-code --heads "$REMOTE" "$BRANCH" >/dev/null 2>&1; then
               git fetch "$REMOTE" "$BRANCH:$BRANCH"
@@ -737,7 +759,7 @@ jobs:
 
           GIT_USER="${ACCESS_GIT_USER:-$REPO_OWNER}"
           BRANCH="repository-${RESULT_NAME}"
-          REMOTE="https://$GIT_USER:${ACCESS_GIT}@git.deadzone.lol/${REPO_OWNER}/${REPO_NAME}.git"
+          REMOTE="${GIT_SCHEME:-https}://$GIT_USER:${ACCESS_GIT}@${GIT_HOST:-git.deadzone.lol}/${REPO_OWNER}/${REPO_NAME}.git"
           mkdir -p /tmp/oldrepo
 
           # Clean everything including subdirs like nonfree/
@@ -856,8 +878,8 @@ jobs:
 
           GIT_USER="${ACCESS_GIT_USER:-$REPO_OWNER}"
           BRANCH="repository-${RESULT_NAME}"
-          REMOTE="https://$GIT_USER:${ACCESS_GIT}@git.deadzone.lol/${REPO_OWNER}/${REPO_NAME}.git"
-          LFS_URL="https://git.deadzone.lol/${REPO_OWNER}/${REPO_NAME}.git/info/lfs"
+          REMOTE="${GIT_SCHEME:-https}://$GIT_USER:${ACCESS_GIT}@${GIT_HOST:-git.deadzone.lol}/${REPO_OWNER}/${REPO_NAME}.git"
+          LFS_URL="${GIT_SCHEME:-https}://${GIT_HOST:-git.deadzone.lol}/${REPO_OWNER}/${REPO_NAME}.git/info/lfs"
 
           git config --local credential.helper store
           git config --local credential.useHttpPath false
