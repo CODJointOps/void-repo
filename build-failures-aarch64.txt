@@ -1,2 +1,3 @@
+aquamarine
 hyprland-qt-support
 hyprland-guiutils
