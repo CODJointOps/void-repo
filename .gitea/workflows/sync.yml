@@ -47,13 +47,30 @@ jobs:
               if diff -rq --exclude='.git' --exclude='.gitea' --exclude='README.md' "$srcdir/" "srcpkgs/$pkgname/" >/dev/null 2>&1; then
                   echo "   No changes for $pkgname"
               else
+                  # Detect version change to reset revision to 1
+                  old_version=""
+                  new_version=""
+                  if [ -f "srcpkgs/$pkgname/template" ]; then
+                      old_version=$(grep "^version=" "srcpkgs/$pkgname/template" | cut -d= -f2 | head -1)
+                  fi
+                  if [ -f "$srcdir/template" ]; then
+                      new_version=$(grep "^version=" "$srcdir/template" | cut -d= -f2 | head -1)
+                  fi
+
                   rm -rf "srcpkgs/$pkgname"
                   mkdir -p "srcpkgs/$pkgname"
                   # Copy only package-relevant files (template, files/, patches/)
                   cp -r "$srcdir/template" "srcpkgs/$pkgname/"
                   [ -d "$srcdir/files" ] && cp -r "$srcdir/files" "srcpkgs/$pkgname/"
                   [ -d "$srcdir/patches" ] && cp -r "$srcdir/patches" "srcpkgs/$pkgname/"
-                  echo "   Updated $pkgname"
+
+                  # Reset revision to 1 when version changes
+                  if [ -n "$old_version" ] && [ -n "$new_version" ] && [ "$old_version" != "$new_version" ]; then
+                      sed -i 's/^revision=.*/revision=1/' "srcpkgs/$pkgname/template"
+                      echo "   Updated $pkgname ($old_version -> $new_version, revision reset to 1)"
+                  else
+                      echo "   Updated $pkgname"
+                  fi
                   changed=true
               fi
           }
