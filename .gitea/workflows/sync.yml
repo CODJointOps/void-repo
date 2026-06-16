@@ -44,7 +44,7 @@ jobs:
                   mkdir -p "srcpkgs/$pkgname"
               fi
 
-              if diff -rq --exclude='.git' --exclude='.gitea' --exclude='README.md' "$srcdir/" "srcpkgs/$pkgname/" >/dev/null 2>&1; then
+              if diff -rq --exclude='.git' --exclude='.gitea' --exclude='README.md' --exclude='update' --exclude='update.yml' "$srcdir/" "srcpkgs/$pkgname/" >/dev/null 2>&1; then
                   echo "   No changes for $pkgname"
               else
                   # Detect version change to reset revision to 1
@@ -233,7 +233,7 @@ jobs:
               git add srcpkgs/
               if ! git diff --cached --quiet; then
                   git commit -m "sync: update package templates"
-                  git push
+                  git pull --rebase && git push
               else
                   echo "Nothing to commit after staging"
               fi
