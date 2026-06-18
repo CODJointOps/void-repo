@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=TradingView
+Comment=Charting platform for traders and investors
+Exec=tradingview %u
+Icon=tradingview
+Type=Application
+Categories=Office;Finance;
+StartupWMClass=TradingView
+StartupNotify=true
+Terminal=false
+X-MultipleArgs=false

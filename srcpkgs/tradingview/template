@@ -1,0 +1,49 @@
+pkgname=tradingview
+version=3.2.0
+revision=1
+archs="x86_64"
+hostmakedepends="squashfs-tools"
+depends="libsecret"
+short_desc="Charting platform for traders and investors"
+maintainer="Orphaned <orphan@voidlinux.org>"
+license="LicenseRef-TradingView"
+homepage="https://www.tradingview.com/desktop/"
+changelog="https://www.tradingview.com/desktop/"
+repository=nonfree
+restricted=yes
+nopie=yes
+nostrip=yes
+noverifyrdeps=yes
+
+_snap_id="nJdITJ6ZJxdvfu8Ch7n5kH5P99ClzBYV"
+_snap_rev=71
+
+distfiles="https://api.snapcraft.io/api/v1/snaps/download/${_snap_id}_${_snap_rev}.snap>tradingview-${version}-${_snap_rev}.snap"
+checksum=84adb185feaad67ad1cf2755a0c0a5d67bae20a3d6a40e8a024e3a431cca1e7b
+
+do_extract() {
+	mkdir -p "${wrksrc}"
+	unsquashfs -q -n -f -d "${wrksrc}/" \
+		"${XBPS_SRCDISTDIR}/${pkgname}-${version}/tradingview-${version}-${_snap_rev}.snap"
+}
+
+do_install() {
+	install -dm755 "${DESTDIR}/opt/${pkgname}"
+
+	for f in "${wrksrc}"/*; do
+		case "${f##*/}" in
+			meta|snap) ;;
+			*) cp -r "${f}" "${DESTDIR}/opt/${pkgname}/";;
+		esac
+	done
+
+	# Icon extracted from snap's meta
+	install -Dm644 "${wrksrc}/meta/gui/icon.png" \
+		"${DESTDIR}/usr/share/icons/hicolor/512x512/apps/${pkgname}.png"
+
+	vinstall "${FILESDIR}/tradingview.desktop" 0644 usr/share/applications/
+
+	# --no-sandbox is required outside the snap environment.
+	# Redirect output to /dev/null; without a tty the write triggers EPIPE and crashes the app.
+	vbin "${FILESDIR}/tradingview.sh" tradingview
+}
