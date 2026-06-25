@@ -87,3 +87,4 @@ On first refresh, accept the repo signing key prompt.
 | `vesktop` | `x86_64` |
 | `zen-browser` | `x86_64`, `aarch64` |
 | `librewolf` | `x86_64`, `aarch64` |
+| `zerotier-one` | `x86_64`, `aarch64` (`+musl`) |
