@@ -65,6 +65,7 @@ On first refresh, accept the repo signing key prompt.
 | `claude-desktop` | `x86_64` |
 | `ente-auth` | `x86_64` (`only_for_archs`) |
 | `glaze` | `all` |
+| `helium-browser` | `x86_64` |
 | `hyprcursor` | `all` |
 | `hyprgraphics` | `all` |
 | `hyprland` | `all` |
@@ -87,4 +88,5 @@ On first refresh, accept the repo signing key prompt.
 | `vesktop` | `x86_64` |
 | `zen-browser` | `x86_64`, `aarch64` |
 | `librewolf` | `x86_64`, `aarch64` |
+| `tradingview` | `x86_64`, `aarch64` |
 | `zerotier-one` | `x86_64`, `aarch64` (`+musl`) |
