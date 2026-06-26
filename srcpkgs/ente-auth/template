@@ -9,8 +9,8 @@ short_desc="Open source 2FA authenticator with end-to-end encrypted backups"
 maintainer="rich@bandaholics.cash"
 license="AGPL-3.0-only"
 homepage="https://ente.io/auth/"
-changelog="https://github.com/ente-io/ente/releases"
-distfiles="https://github.com/ente-io/ente/releases/download/auth-v${version}/ente-auth-v${version}-x86_64.deb"
+changelog="https://github.com/ente/ente/releases"
+distfiles="https://github.com/ente/ente/releases/download/auth-v${version}/ente-auth-v${version}-x86_64.deb"
 checksum=6b71cbacb18139da458aac3515d276014cdca881caf83eb1fc82fe7df9faa592
 nostrip=yes
 
