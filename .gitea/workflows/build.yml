@@ -710,6 +710,11 @@ jobs:
           BRANCH="repository-${RESULT_NAME}"
           REMOTE="${GIT_SCHEME:-https}://$GIT_USER:${ACCESS_GIT}@${GIT_HOST:-git.deadzone.lol}/${REPO_OWNER}/${REPO_NAME}.git"
 
+          # Plaintext-only push; disable LFS hooks and prefer conservative
+          # transfer settings so a transient disconnect does not fail the run.
+          git config --local lfs.locksverify false
+          git config --local http.version HTTP/1.1
+
           if git ls-remote --exit-code --heads "$REMOTE" "$BRANCH" >/dev/null 2>&1; then
               git fetch "$REMOTE" "$BRANCH:$BRANCH"
               git checkout "$BRANCH"
@@ -730,7 +735,20 @@ jobs:
               else
                   git commit -m "build(${RESULT_NAME}): update failures list"
               fi
-              git push "$REMOTE" "$BRANCH"
+              pushed=0
+              for attempt in 1 2 3 4 5; do
+                  if git push --no-verify "$REMOTE" "$BRANCH"; then
+                      pushed=1
+                      break
+                  fi
+                  if [ "$attempt" -lt 5 ]; then
+                      delay=$((attempt * 15))
+                      echo "Failures-list push failed (attempt ${attempt}/5), retrying in ${delay}s..."
+                      sleep "$delay"
+                  fi
+              done
+              # Bookkeeping push: never let a transient disconnect fail the job.
+              [ "$pushed" -eq 1 ] || echo "WARNING: could not push failures list after 5 attempts; continuing."
           fi
 
       - name: Sign
