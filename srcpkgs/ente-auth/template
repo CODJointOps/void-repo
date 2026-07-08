@@ -1,7 +1,7 @@
 # Template file for 'ente-auth'
 pkgname=ente-auth
 version=4.4.24
-revision=1
+revision=2
 only_for_archs="x86_64"
 hostmakedepends="tar"
 depends="gtk+3 libsecret hicolor-icon-theme desktop-file-utils"
