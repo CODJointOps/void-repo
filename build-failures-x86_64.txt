@@ -1,1 +1,4 @@
+hyprutils
+xdg-desktop-portal-hyprland
 claude-desktop
+aquamarine
