@@ -1,0 +1,3 @@
+hyprutils
+xdg-desktop-portal-hyprland
+aquamarine
