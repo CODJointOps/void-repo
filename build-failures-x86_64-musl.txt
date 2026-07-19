@@ -1,3 +1,4 @@
 hyprutils
 xdg-desktop-portal-hyprland
+hyprlock
 aquamarine
