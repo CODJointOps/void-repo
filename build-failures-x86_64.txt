@@ -1,5 +1,7 @@
 hyprutils
+aquamarine
 xdg-desktop-portal-hyprland
 hyprlock
+hyprland-guiutils
+hyprland
 claude-desktop
-aquamarine
