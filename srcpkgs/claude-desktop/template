@@ -1,7 +1,7 @@
 # Template file for 'claude-desktop'
 pkgname=claude-desktop
 version=1.24012.9
-revision=6
+revision=7
 archs="x86_64"
 depends="electron35 desktop-file-utils hicolor-icon-theme"
 short_desc="Claude AI Desktop Application"
@@ -11,9 +11,9 @@ homepage="https://claude.ai"
 changelog="https://github.com/patrickjaja/claude-desktop-bin/releases"
 repository="nonfree"
 restricted=yes
-_tag=v1.24012.9-11
+_tag=v1.24012.9-12
 distfiles="https://github.com/patrickjaja/claude-desktop-bin/releases/download/${_tag}/claude-desktop-${version}-linux.tar.gz"
-checksum=254e1faa3d55ca68958e5747169d45c1c3e7743ba899c5b5f8f8839b52e7d9d0
+checksum=9374de74ffbb604625add39231c61fdf3948449593ceee1c7c118ef7dd426d1a
 
 do_install() {
 	vmkdir usr/lib/${pkgname}
