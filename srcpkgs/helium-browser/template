@@ -1,6 +1,6 @@
 # Template file for 'helium-browser'
 pkgname=helium-browser
-version=0.15.1.1
+version=0.15.2.1
 revision=1
 archs="x86_64 aarch64"
 hostmakedepends="curl"
@@ -18,11 +18,11 @@ noverifyrdeps=yes
 case "${XBPS_TARGET_MACHINE}" in
 x86_64*)
 	_arch=x86_64
-	checksum=d51aed1d85b94f006120d4eedb62527782a39f13919432bfefbbb5a4495d759a
+	checksum=f81c374f2efb70b400f27061c75823c971548c16e7e1131353f0fd15cf4368ac
 	;;
 aarch64*)
 	_arch=arm64
-	checksum=1fdfee6a5ef3a98ea62f8dc0474eab8d86e19f1978127aa7a78543103878e264
+	checksum=04578d97587bdf270aa0d120d0d1886f131ff237b634a8ce428aa3f5d4d72600
 	;;
 *)
 	broken="No distfiles available for this target"
