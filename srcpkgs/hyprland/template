@@ -1,17 +1,17 @@
 # Template file for 'hyprland'
 pkgname=hyprland
 version=0.56.2
-revision=3
+revision=4
 build_style=cmake
 configure_args="--no-warn-unused-cli -DCMAKE_BUILD_TYPE:STRING=Release \
  -DCMAKE_INSTALL_PREFIX:PATH=/usr -DNO_SYSTEMD:BOOL=true \
  -Dglaze_DIR:PATH=/usr/share/glaze"
 hostmakedepends="cmake cpio glslang hyprwayland-scanner hyprwire jq pkgconf python3 xxd"
-makedepends="aquamarine cairo-devel glaze glslang-devel hwids hyprcursor
+makedepends="aquamarine cairo-devel glaze glslang-devel hwids hyprcursor hyprland-protocols
  hyprgraphics hyprlang hyprutils hyprwire lcms2-devel libdisplay-info-devel libdrm-devel
- libgbm-devel libglvnd-devel libinput-devel libliftoff-devel libseat-devel
+ libei-devel libgbm-devel libglvnd-devel libinput-devel libliftoff-devel libseat-devel
  libxcb-devel libXcursor-devel libxkbcommon-devel lua55-devel muparser-devel
- pango-devel re2-devel SPIRV-Tools-devel tomlplusplus-devel wayland-devel
+ pango-devel re2-devel readline-devel SPIRV-Tools-devel tomlplusplus-devel wayland-devel
  wayland-protocols xcb-util-errors-devel xcb-util-renderutil-devel
  xcb-util-wm-devel xorg-server-xwayland"
 short_desc="Dynamic tiling Wayland compositor that doesn't sacrifice on its looks"

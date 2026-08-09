@@ -1,9 +1,9 @@
 # Template file for 'claude-desktop'
 pkgname=claude-desktop
 version=1.26832.0
-revision=1
+revision=2
 archs="x86_64"
-depends="electron35 desktop-file-utils hicolor-icon-theme"
+depends="desktop-file-utils hicolor-icon-theme libnotify libsecret xdg-desktop-portal xdg-utils"
 short_desc="Claude AI Desktop Application"
 maintainer="rich@bandaholics.cash"
 license="custom:Claude"
@@ -11,19 +11,22 @@ homepage="https://claude.ai"
 changelog="https://github.com/patrickjaja/claude-desktop-bin/releases"
 repository="nonfree"
 restricted=yes
+nostrip=yes
 _tag=v1.26832.0
 distfiles="https://github.com/patrickjaja/claude-desktop-bin/releases/download/${_tag}/claude-desktop-${version}-linux.tar.gz"
 checksum=a07b2aa9d3560e19bda2f86ee697f45799c3bd17af742c50d6368ec56defdbeb
 
 do_install() {
+	# The tarball ships a self-contained Electron tree; /usr/lib/claude-desktop
+	# is the path the bundled launcher probes for the "claude" binary.
 	vmkdir usr/lib/${pkgname}
-	vcopy app/* usr/lib/${pkgname}
+	vcopy "claude-desktop/*" usr/lib/${pkgname}
+	chmod 4755 ${DESTDIR}/usr/lib/${pkgname}/chrome-sandbox
 
-	vbin ${FILESDIR}/claude-desktop
+	vbin launcher/claude-desktop
 
-	vinstall ${FILESDIR}/claude-desktop.desktop 0644 usr/share/applications
+	vinstall ${FILESDIR}/com.anthropic.Claude.desktop 0644 usr/share/applications
+	vinstall icons/claude-desktop.png 0644 usr/share/icons/hicolor/256x256/apps
 
-	if [ -f icons/claude-desktop.png ]; then
-		vinstall icons/claude-desktop.png 0644 usr/share/icons/hicolor/256x256/apps
-	fi
+	vlicense copyright LICENSE
 }
