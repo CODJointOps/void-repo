@@ -26,6 +26,10 @@ jobs:
         TEST: '${{ matrix.config.test }}'
     strategy:
       fail-fast: false
+      # Serialized: concurrent heavy builds (hyprland x2) exhaust the runner and
+      # every container gets killed mid-compile. x86_64 runs first so the primary
+      # arch publishes before a slower arch can take the runner down.
+      max-parallel: 1
       matrix:
         config:
           - { arch: x86_64,       host: x86_64,      libc: glibc, test: 1 }
