@@ -820,6 +820,24 @@ jobs:
               echo "No existing $BRANCH on remote, starting fresh."
           fi
 
+          # Delete every artifact belonging to one package name. A "${pkgname}-"*
+          # glob is wrong here: hyprland-* also matches hyprland-guiutils, so
+          # publishing hyprland silently dropped its siblings from the branch.
+          remove_pkg_artifacts() {
+              target="$1"
+              for old in ./*.xbps ./*.xbps.sig ./*.xbps.sig2; do
+                  [ -e "$old" ] || continue
+                  stem="$(basename "$old")"
+                  stem="${stem%.sig2}"
+                  stem="${stem%.sig}"
+                  oldver="$(xbps-uhelper binpkgver "$stem" 2>/dev/null || true)"
+                  oldname="$(xbps-uhelper getpkgname "$oldver" 2>/dev/null || true)"
+                  if [ "$oldname" = "$target" ]; then
+                      rm -f "$old"
+                  fi
+              done
+          }
+
           new_pkg_files=""
           for f in /tmp/newpkgs/*.xbps; do
               [ -e "$f" ] || continue
@@ -831,10 +849,7 @@ jobs:
                   new_pkg_files="$new_pkg_files ./${base}"
                   continue
               fi
-              rm -f "${pkgname}-"*.${RESULT_NAME}.xbps "${pkgname}-"*.noarch.xbps \
-                    "${pkgname}-"*.${RESULT_NAME}.xbps.sig "${pkgname}-"*.noarch.xbps.sig \
-                    "${pkgname}-"*.${RESULT_NAME}.xbps.sig2 "${pkgname}-"*.noarch.xbps.sig2 \
-                    2>/dev/null || true
+              remove_pkg_artifacts "$pkgname"
               new_pkg_files="$new_pkg_files ./${base}"
           done
 
@@ -842,10 +857,7 @@ jobs:
           if [ -n "$removed" ]; then
               echo "==> removing packages for deleted templates..."
               for pkg in $removed; do
-                  rm -f "${pkg}-"*.${RESULT_NAME}.xbps "${pkg}-"*.noarch.xbps \
-                        "${pkg}-"*.${RESULT_NAME}.xbps.sig "${pkg}-"*.noarch.xbps.sig \
-                        "${pkg}-"*.${RESULT_NAME}.xbps.sig2 "${pkg}-"*.noarch.xbps.sig2 \
-                        2>/dev/null || true
+                  remove_pkg_artifacts "$pkg"
                   rm -f "${pkg}.${RESULT_NAME}.xbps" "${pkg}.noarch.xbps" \
                         "${pkg}.${RESULT_NAME}.xbps.sig" "${pkg}.noarch.xbps.sig" \
                         "${pkg}.${RESULT_NAME}.xbps.sig2" "${pkg}.noarch.xbps.sig2" \
