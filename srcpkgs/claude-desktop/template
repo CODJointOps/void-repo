@@ -1,6 +1,6 @@
 # Template file for 'claude-desktop'
 pkgname=claude-desktop
-version=1.34493.1
+version=1.37937.3
 revision=1
 archs="x86_64"
 depends="desktop-file-utils hicolor-icon-theme libnotify libsecret xdg-desktop-portal xdg-utils"
@@ -12,9 +12,9 @@ changelog="https://github.com/patrickjaja/claude-desktop-bin/releases"
 repository="nonfree"
 restricted=yes
 nostrip=yes
-_tag=v1.34493.1
+_tag=v1.37937.3
 distfiles="https://github.com/patrickjaja/claude-desktop-bin/releases/download/${_tag}/claude-desktop-${version}-linux.tar.gz"
-checksum=721a6f1a3711b13b98d9d17e463f56fe6d52ff86a218daab0734acc68dcb2017
+checksum=0dc196478487e6e444e9bd81fa05809d2128cb170d5ccbab3cc7e67be1919c0d
 
 do_install() {
 	# The tarball ships a self-contained Electron tree; /usr/lib/claude-desktop
