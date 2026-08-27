@@ -1,7 +1,7 @@
 # Template file for 'claude-desktop'
 pkgname=claude-desktop
 version=1.37937.3
-revision=1
+revision=2
 archs="x86_64"
 depends="desktop-file-utils hicolor-icon-theme libnotify libsecret xdg-desktop-portal xdg-utils"
 short_desc="Claude AI Desktop Application"
@@ -26,7 +26,11 @@ do_install() {
 	vbin launcher/claude-desktop
 
 	vinstall ${FILESDIR}/com.anthropic.Claude.desktop 0644 usr/share/applications
-	vinstall icons/claude-desktop.png 0644 usr/share/icons/hicolor/256x256/apps
+	for _icon in icons/hicolor/*/apps/${pkgname}.png; do
+		_size=${_icon#icons/hicolor/}
+		_size=${_size%%/*}
+		vinstall "${_icon}" 0644 "usr/share/icons/hicolor/${_size}/apps"
+	done
 
 	vlicense copyright LICENSE
 }
