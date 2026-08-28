@@ -1,8 +1,8 @@
 # Template file for 'librewolf'
 pkgname=librewolf
 version=154.0.1
-revision=1
-_rev=2
+revision=2
+_rev=3
 archs="x86_64 aarch64"
 hostmakedepends="tar xz"
 depends="desktop-file-utils hicolor-icon-theme pciutils"
@@ -17,11 +17,11 @@ _tag="${version}-${_rev}"
 case "${XBPS_TARGET_MACHINE}" in
 x86_64)
 	_upstream_arch=x86_64
-	_checksum=1d55e6a80952494ab88d84c999b1594b477b455d79b53066edc9f7cc3dfbbbc8
+	_checksum=413a71164ace86ceeaa426568b3196fe9fda823f873a106803e075dc4dbfdf5f
 	;;
 aarch64)
 	_upstream_arch=arm64
-	_checksum=bf95281e3baab9920f3cec6bd930cf15e6554b12614a9efb2c9168131148f41d
+	_checksum=d318652b32166ff2b13cfd2756c6be3a2f962dcee835d2678a1f07dc7654de12
 	;;
 *)
 	broken="No distfiles available for ${XBPS_TARGET_MACHINE}"

@@ -1,7 +1,7 @@
 # Template file for 'zerotier-one'
 pkgname=zerotier-one
-version=1.16.1
-revision=2
+version=1.16.2
+revision=1
 archs="x86_64 aarch64 x86_64-musl aarch64-musl"
 build_style=gnu-makefile
 make_build_args="ZT_SSO_SUPPORTED=0"
@@ -12,7 +12,7 @@ license="MPL-2.0"
 homepage="https://www.zerotier.com/"
 changelog="https://raw.githubusercontent.com/zerotier/ZeroTierOne/master/RELEASE-NOTES.md"
 distfiles="https://github.com/zerotier/ZeroTierOne/archive/refs/tags/${version}.tar.gz"
-checksum=abbe8c84f27f8454f923148573f42c6a4d22d947f50359c6fe3c977a89fd0f63
+checksum=2c607f573c6e38815433af289d364a689a203b18b51125f06c4472014d0657f0
 
 do_install() {
 	vbin zerotier-one
