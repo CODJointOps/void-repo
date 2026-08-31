@@ -90,3 +90,4 @@ On first refresh, accept the repo signing key prompt.
 | `librewolf` | `x86_64`, `aarch64` |
 | `tradingview` | `x86_64`, `aarch64` |
 | `zerotier-one` | `x86_64`, `aarch64` (`+musl`) |
+| `codex-desktop` | `x86_64`, `aarch64` |
