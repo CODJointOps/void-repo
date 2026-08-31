@@ -1,0 +1,66 @@
+# Template file for 'codex-desktop'
+pkgname=codex-desktop
+version=26.825.51511
+revision=1
+archs="x86_64 aarch64"
+hostmakedepends="tar xz"
+depends="alsa-lib at-spi2-atk at-spi2-core cairo dbus-libs desktop-file-utils
+ eudev-libudev expat gdk-pixbuf glib gtk+3 hicolor-icon-theme libcups libgbm
+ libnotify libusb libX11 libXcomposite libXdamage libXext libXfixes libXrandr
+ libxcb libxkbcommon nspr nss pango xdg-desktop-portal xdg-utils"
+short_desc="ChatGPT desktop app with Codex by OpenAI"
+maintainer="Wizzard <rich@bandaholics.cash>"
+license="custom:OpenAI-Terms"
+homepage="https://developers.openai.com/codex/app"
+changelog="https://learn.chatgpt.com/docs/linux/linux-app"
+repository="nonfree"
+restricted=yes
+nostrip=yes
+noshlibprovides=yes
+noverifyrdeps=yes
+lib32disabled=yes
+
+case "${XBPS_TARGET_MACHINE}" in
+x86_64)
+	_deb_arch=amd64
+	_prebuild_keep="x64"
+	checksum=3554b0022c6cfb513326f43fd11f718835a77086ac4d7ca2ff3ebbba2d4c7f45
+	;;
+aarch64)
+	_deb_arch=arm64
+	_prebuild_keep="arm64"
+	checksum=125e36522d43c75bd7958477846ba6b1cddf2eb19cefcb57dda80be1742f917f
+	;;
+*)
+	broken="No distfiles available for this target"
+	;;
+esac
+
+_debfile="chatgpt_${version}_${_deb_arch}.deb"
+distfiles="https://persistent.oaistatic.com/codex-app-prod/linux/deb/pool/main/c/chatgpt/${_debfile}"
+
+do_extract() {
+	ar x "${XBPS_SRCDISTDIR}/${pkgname}-${version}/${_debfile}"
+	# Upstream has shipped data.tar.xz so far; do not hardcode the compressor.
+	tar xf $(ls data.tar.*) -C "${wrksrc}"
+}
+
+do_install() {
+	# Vendored node prebuilds ship every OS/libc variant; the foreign ELFs make
+	# the shlib scan resolve against musl and arm loaders that are not installed.
+	find usr/lib/chatgpt -type d -name prebuilds -prune | while read -r _dir; do
+		find "${_dir}" -mindepth 1 -maxdepth 1 -type d \
+			! -name "*linux-${_prebuild_keep}" -exec rm -rf {} +
+	done
+
+	vmkdir usr/lib
+	vcopy usr/lib/chatgpt usr/lib
+
+	vmkdir usr/bin
+	ln -s ../lib/chatgpt/codex-launcher "${DESTDIR}/usr/bin/chatgpt"
+
+	vinstall usr/share/applications/chatgpt.desktop 0644 usr/share/applications
+	vinstall usr/share/pixmaps/chatgpt.png 0644 usr/share/pixmaps
+
+	vlicense usr/share/doc/chatgpt/copyright LICENSE.electron
+}
