@@ -1,36 +1,75 @@
 # Template file for 'claude-desktop'
 pkgname=claude-desktop
 version=1.40609.0
-revision=2
-archs="x86_64"
-depends="desktop-file-utils hicolor-icon-theme libnotify libsecret xdg-desktop-portal xdg-utils"
+revision=1
+archs="x86_64 aarch64"
+hostmakedepends="tar xz"
+depends="desktop-file-utils hicolor-icon-theme xdg-desktop-portal xdg-utils"
 short_desc="Claude AI Desktop Application"
-maintainer="rich@bandaholics.cash"
+maintainer="Wizzard <rich@bandaholics.cash>"
 license="custom:Claude"
 homepage="https://claude.ai"
-changelog="https://github.com/patrickjaja/claude-desktop-bin/releases"
+changelog="https://code.claude.com/docs/en/desktop-linux"
 repository="nonfree"
 restricted=yes
 nostrip=yes
-_tag=v1.40609.0-3
-distfiles="https://github.com/patrickjaja/claude-desktop-bin/releases/download/${_tag}/claude-desktop-${version}-linux.tar.gz"
-checksum=9670fdc9a9f8c12c220e599c0639939a75bb0107b7b30b849745177d580ca3d6
+noshlibprovides=yes
+lib32disabled=yes
+
+# First-party Debian package from Anthropic's own signed apt repository. The
+# checksums below are the ones published in that repo's Release-signed
+# Packages index (key 31DD DE24 DDFA B679 F42D 7BD2 BAA9 29FF 1A7E CACE), so
+# pinning them here carries Anthropic's signature through to the build.
+_repo=https://downloads.claude.ai/claude-desktop/apt/stable
+
+case "${XBPS_TARGET_MACHINE}" in
+x86_64)
+	_deb_arch=amd64
+	checksum=a96e96ff8eb4d4d7ffa785aba7fc23f8684b12ac83ed2ef4060f0f09f4177a98
+	;;
+aarch64)
+	_deb_arch=arm64
+	checksum=c97e1aa0cd49437054b161bced1fea2ebfae60453e616d5b73524a9146421773
+	;;
+*)
+	broken="No distfiles available for this target"
+	;;
+esac
+
+_debfile="${pkgname}_${version}_${_deb_arch}.deb"
+distfiles="${_repo}/pool/main/c/${pkgname}/${_debfile}"
+
+do_extract() {
+	ar x "${XBPS_SRCDISTDIR}/${pkgname}-${version}/${_debfile}"
+	# Upstream has shipped data.tar.xz so far; do not hardcode the compressor.
+	tar xf $(ls data.tar.*) -C "${wrksrc}"
+}
 
 do_install() {
-	# The tarball ships a self-contained Electron tree; /usr/lib/claude-desktop
-	# is the path the bundled launcher probes for the "claude" binary.
-	vmkdir usr/lib/${pkgname}
-	vcopy "claude-desktop/*" usr/lib/${pkgname}
+	vmkdir usr/lib
+	vcopy usr/lib/${pkgname} usr/lib
+	# Chromium's setuid sandbox fallback; upstream ships it 4755 and vcopy
+	# drops the bit.
 	chmod 4755 ${DESTDIR}/usr/lib/${pkgname}/chrome-sandbox
 
-	vbin launcher/claude-desktop
+	vmkdir usr/bin
+	ln -s ../lib/${pkgname}/${pkgname} ${DESTDIR}/usr/bin/${pkgname}
 
-	vinstall ${FILESDIR}/com.anthropic.Claude.desktop 0644 usr/share/applications
-	for _icon in icons/hicolor/*/apps/${pkgname}.png; do
-		_size=${_icon#icons/hicolor/}
+	vinstall usr/share/applications/com.anthropic.Claude.desktop 0644 \
+		usr/share/applications
+	for _icon in usr/share/icons/hicolor/*/apps/${pkgname}.png; do
+		_size=${_icon#usr/share/icons/hicolor/}
 		_size=${_size%%/*}
 		vinstall "${_icon}" 0644 "usr/share/icons/hicolor/${_size}/apps"
 	done
 
-	vlicense copyright LICENSE
+	# The .deb registers these from postinst; both reference absolute paths
+	# that are correct at build time, so install them directly.
+	local _sp=usr/lib/${pkgname}/resources/gnome-search-provider
+	vinstall ${_sp}/com.anthropic.Claude.search-provider.ini 0644 \
+		usr/share/gnome-shell/search-providers
+	vinstall ${_sp}/com.anthropic.Claude.SearchProvider.service 0644 \
+		usr/share/dbus-1/services
+
+	vlicense usr/share/doc/${pkgname}/copyright LICENSE
 }

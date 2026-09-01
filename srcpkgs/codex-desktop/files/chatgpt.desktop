@@ -1,0 +1,13 @@
+[Desktop Entry]
+Name=ChatGPT
+Comment=ChatGPT desktop app with Codex by OpenAI
+GenericName=AI assistant
+Keywords=chatgpt;codex;openai;ai;assistant;
+Exec=chatgpt %U
+Icon=chatgpt
+Type=Application
+Terminal=false
+StartupNotify=true
+StartupWMClass=ChatGPT
+Categories=Utility;Development;
+MimeType=x-scheme-handler/codex;x-scheme-handler/http;x-scheme-handler/https;text/csv;application/vnd.openxmlformats-officedocument.wordprocessingml.document;application/vnd.openxmlformats-officedocument.presentationml.presentation;text/tab-separated-values;application/vnd.ms-excel;application/vnd.ms-excel.sheet.macroEnabled.12;application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;

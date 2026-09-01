@@ -1,9 +1,9 @@
 # Template file for 'codex-desktop'
 pkgname=codex-desktop
 version=26.825.51511
-revision=1
+revision=3
 archs="x86_64 aarch64"
-hostmakedepends="tar xz"
+hostmakedepends="ImageMagick tar xz"
 depends="alsa-lib at-spi2-atk at-spi2-core cairo dbus-libs desktop-file-utils
  eudev-libudev expat gdk-pixbuf glib gtk+3 hicolor-icon-theme libcups libgbm
  libnotify libusb libX11 libXcomposite libXdamage libXext libXfixes libXrandr
@@ -56,11 +56,22 @@ do_install() {
 	vmkdir usr/lib
 	vcopy usr/lib/chatgpt usr/lib
 
-	vmkdir usr/bin
-	ln -s ../lib/chatgpt/codex-launcher "${DESTDIR}/usr/bin/chatgpt"
+	vbin "${FILESDIR}/chatgpt-launcher.sh" chatgpt
 
-	vinstall usr/share/applications/chatgpt.desktop 0644 usr/share/applications
+	# Upstream entry has no Keywords, so "codex" does not match it in a
+	# launcher, and no StartupWMClass, so the window is not tied to the icon.
+	vinstall "${FILESDIR}/chatgpt.desktop" 0644 usr/share/applications
+
+	# Upstream ships one 1024px pixmap; menus and launchers look in hicolor.
 	vinstall usr/share/pixmaps/chatgpt.png 0644 usr/share/pixmaps
+	for _size in 16 24 32 48 64 128 256 512; do
+		magick usr/share/pixmaps/chatgpt.png -resize ${_size}x${_size} \
+			"chatgpt-${_size}.png"
+		vinstall "chatgpt-${_size}.png" 0644 \
+			"usr/share/icons/hicolor/${_size}x${_size}/apps" chatgpt.png
+	done
+	vinstall usr/share/pixmaps/chatgpt.png 0644 \
+		usr/share/icons/hicolor/1024x1024/apps chatgpt.png
 
 	vlicense usr/share/doc/chatgpt/copyright LICENSE.electron
 }
