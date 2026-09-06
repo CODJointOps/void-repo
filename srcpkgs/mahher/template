@@ -1,0 +1,48 @@
+# Template file for 'mahher'
+#
+# A prebuilt binary rather than a source build, and that is a security
+# decision rather than a convenience. The source repository is private;
+# building here would mean a credential in a public repository's CI, and a
+# credential that can read the source tarball is the source. The compiled
+# package is public either way -- anyone with this repo configured installs
+# it -- so shipping the binary as the distfile exposes nothing further and
+# leaves nothing to steal.
+#
+# The binary is built on Void, on the platform docs/PLATFORMS.md calls tier 1,
+# by tools/release.sh in the source tree. It is glibc x86_64 and nothing else.
+pkgname=mahher
+version=0.1.0
+revision=1
+archs="x86_64"
+short_desc="Native Linux level editor for Source engine maps"
+maintainer="Wizzard <rich@bandaholics.cash>"
+license="MIT"
+homepage="https://git.deadzone.lol/Signal/mahher"
+# The dist branch of this repository, which is public, so the fetch needs no
+# credential. media/branch and not raw/branch: the tarball is an LFS object and
+# raw hands back the pointer file.
+distfiles="https://git.deadzone.lol/Wizzard/mahher-void/media/branch/dist/mahher-${version}-x86_64-linux.tar.gz"
+checksum=6107fa0350183b6c2f89f8b304eff558085434cbf6ca0d5bef0993d8e69ea47f
+# mahher-debug writes every thread's stack on a freeze, a panic or a fatal
+# signal. Stripped, that report is a list of addresses and the feature is gone.
+nostrip=yes
+lib32disabled=yes
+# wgpu and winit reach all of these through dlopen, so nothing links against
+# them and the shlib scan cannot find them. libasound and libbz2 are DT_NEEDED
+# and resolve on their own.
+depends="libX11 libXcursor libXi libxkbcommon libxkbcommon-x11 wayland libglvnd vulkan-loader"
+
+do_install() {
+	for _bin in mahher mahher-drive mahher-mcp mahher-protect; do
+		vbin "$_bin"
+	done
+
+	# packaging/install.sh puts these under $XDG_DATA_HOME for somebody running
+	# out of a checkout. A package owns the system paths instead.
+	vinstall packaging/mahher.desktop 0644 usr/share/applications
+	vinstall packaging/mahher.svg 0644 usr/share/icons/hicolor/scalable/apps
+	for _size in 16 24 32 48 64 128 256 512; do
+		vinstall "packaging/icons/hicolor/${_size}x${_size}/apps/mahher.png" \
+			0644 "usr/share/icons/hicolor/${_size}x${_size}/apps"
+	done
+}
