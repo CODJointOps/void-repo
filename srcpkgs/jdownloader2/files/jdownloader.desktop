@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=JDownloader 2
+GenericName=Download Manager
+Comment=Download manager for one-click hosters
+Exec=jdownloader2 %U
+TryExec=jdownloader2
+Icon=jdownloader
+Terminal=false
+Categories=Network;FileTransfer;
+StartupWMClass=jd-Main

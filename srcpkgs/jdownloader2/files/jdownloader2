@@ -1,0 +1,13 @@
+#!/bin/sh
+# JDownloader updates itself in place, so it cannot run from /usr/share.
+# Seed a writable per-user copy on first launch and run everything from there.
+set -e
+
+JD_HOME="${JD_HOME:-${XDG_DATA_HOME:-$HOME/.local/share}/jdownloader2}"
+JD_JAR="/usr/share/jdownloader2/JDownloader.jar"
+
+mkdir -p "$JD_HOME"
+[ -f "$JD_HOME/JDownloader.jar" ] || cp "$JD_JAR" "$JD_HOME/JDownloader.jar"
+
+cd "$JD_HOME"
+exec java -jar JDownloader.jar "$@"

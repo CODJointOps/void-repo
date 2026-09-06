@@ -1,0 +1,33 @@
+# Template file for 'jdownloader2'
+#
+# Upstream ships a self-updating launcher jar with no version string, so
+# version tracks the build date of the jar's manifest entry and the update
+# workflow bumps it whenever the published jar changes.
+pkgname=jdownloader2
+version=2.0.20251104
+revision=1
+create_wrksrc=yes
+depends="openjdk17-jre desktop-file-utils hicolor-icon-theme libXi libXtst"
+short_desc="Download manager for one-click hosters, written in Java"
+maintainer="rich@bandaholics.cash"
+# JDownloader's own sources are GPL-3.0; the redistributed launcher jar also
+# bundles proprietary Appwork and Synthetica components.
+license="GPL-3.0-or-later"
+homepage="https://jdownloader.org/"
+distfiles="https://installer.jdownloader.org/JDownloader.jar"
+checksum=388a1d028e65cbc63933a778ddbc9267c14e7e7858389ce31a10be7308adeb40
+skip_extraction="JDownloader.jar"
+
+do_install() {
+	vinstall "${XBPS_SRCDISTDIR}/${pkgname}-${version}/JDownloader.jar" 644 usr/share/jdownloader2
+
+	vbin "${FILESDIR}/jdownloader2"
+	vbin "${FILESDIR}/jdownloader2-headless"
+
+	vinstall "${FILESDIR}/jdownloader.desktop" 644 usr/share/applications
+
+	for size in 16 22 24 32 48 256; do
+		vinstall "${FILESDIR}/jdownloader${size}.png" 644 \
+			"usr/share/icons/hicolor/${size}x${size}/apps" jdownloader.png
+	done
+}

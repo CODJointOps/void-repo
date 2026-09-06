@@ -1,0 +1,13 @@
+#!/bin/sh
+# Headless JDownloader, driven through My.JDownloader. Same writable-home rule
+# as the GUI launcher.
+set -e
+
+JD_HOME="${JD_HOME:-${XDG_DATA_HOME:-$HOME/.local/share}/jdownloader2}"
+JD_JAR="/usr/share/jdownloader2/JDownloader.jar"
+
+mkdir -p "$JD_HOME"
+[ -f "$JD_HOME/JDownloader.jar" ] || cp "$JD_JAR" "$JD_HOME/JDownloader.jar"
+
+cd "$JD_HOME"
+exec java -Djava.awt.headless=true -jar JDownloader.jar "$@"
