@@ -12,7 +12,7 @@
 # by tools/release.sh in the source tree. It is glibc x86_64 and nothing else.
 pkgname=mahher
 version=0.1.0
-revision=1
+revision=3
 archs="x86_64"
 short_desc="Native Linux level editor for Source engine maps"
 maintainer="Wizzard <rich@bandaholics.cash>"
@@ -22,7 +22,7 @@ homepage="https://git.deadzone.lol/Signal/mahher"
 # credential. media/branch and not raw/branch: the tarball is an LFS object and
 # raw hands back the pointer file.
 distfiles="https://git.deadzone.lol/Wizzard/mahher-void/media/branch/dist/mahher-${version}-x86_64-linux.tar.gz"
-checksum=6107fa0350183b6c2f89f8b304eff558085434cbf6ca0d5bef0993d8e69ea47f
+checksum=dc6109582a2362af42a0af3fccc0178e95add8d50f04a5ef55c2b5ef308bc55d
 # mahher-debug writes every thread's stack on a freeze, a panic or a fatal
 # signal. Stripped, that report is a list of addresses and the feature is gone.
 nostrip=yes
