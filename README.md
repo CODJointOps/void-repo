@@ -67,6 +67,7 @@ On first refresh, accept the repo signing key prompt.
 | `glaze` | `all` |
 | `helium-browser` | `x86_64` |
 | `hyprcursor` | `all` |
+| `jdownloader2` | `all` |
 | `hyprgraphics` | `all` |
 | `hyprland` | `all` |
 | `hyprland-devel` | `all` |
