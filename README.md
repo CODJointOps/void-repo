@@ -83,6 +83,7 @@ On first refresh, accept the repo signing key prompt.
 | `hyprwayland-scanner` | `all` |
 | `hyprwire` | `all` |
 | `libspng` | `all` |
+| `mahher` | `x86_64` |
 | `mullvad-browser` | `x86_64` |
 | `mullvad-vpn` | `x86_64` |
 | `sdbus-cpp` | `all` |
