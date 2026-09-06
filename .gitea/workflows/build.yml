@@ -550,6 +550,50 @@ jobs:
           sudo -Eu builder common/travis/prepare.sh &&
           common/travis/fetch-xtools.sh
 
+      - name: Prefetch private distfiles
+        if: ${{ steps.changed.outputs.pkgs != '' }}
+        env:
+          MAHHER_TOKEN: ${{ secrets.MAHHER_TOKEN }}
+        run: |
+          set -eu
+          cd void-packages
+
+          changed="${{ steps.changed.outputs.pkgs }}"
+
+          # A package whose source is private cannot be fetched by xbps-src,
+          # which sends no credentials. Its repo ships a prefetch.sh that puts
+          # the distfile in hostdir/sources with a token; the fetch stage then
+          # finds it there, verifies the template's checksum and downloads
+          # nothing. A package without the hook is untouched.
+          for pkg in $changed; do
+              hook="srcpkgs/$pkg/prefetch.sh"
+              [ -f "$hook" ] || continue
+
+              archs=$(sed -n 's/^archs=//p' "srcpkgs/$pkg/template" | head -n1 | tr -d '"')
+              if [ -n "$archs" ]; then
+                  case " $archs " in
+                      *" $ARCH "*) ;;
+                      *) echo "==> $pkg does not claim $ARCH; not prefetching"; continue ;;
+                  esac
+              fi
+
+              version=$(sed -n 's/^version=//p' "srcpkgs/$pkg/template" | head -n1)
+              distdir="$(pwd)/hostdir/sources/${pkg}-${version}"
+              echo "==> prefetching $pkg-$version"
+
+              # One package's missing distfile must not take down the arch. Let
+              # xbps-src fail to fetch it and land in the failed list beside any
+              # other package that broke, rather than aborting the step and
+              # cancelling every package queued behind it.
+              if ! env pkgname="$pkg" version="$version" distdir="$distdir" sh "$hook"; then
+                  echo "!! prefetch failed for $pkg; its build will fail at fetch"
+              fi
+          done
+
+          # Prepare masterdir ran before this and handed the tree to builder;
+          # anything written since is root's, and xbps-src is not.
+          [ -d hostdir/sources ] && chown -R builder:builder hostdir/sources || true
+
       - name: Build
         id: build_step
         if: ${{ steps.changed.outputs.pkgs != '' || steps.changed.outputs.removed != '' }}

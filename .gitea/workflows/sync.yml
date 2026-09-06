@@ -63,6 +63,9 @@ jobs:
                   cp -r "$srcdir/template" "srcpkgs/$pkgname/"
                   [ -d "$srcdir/files" ] && cp -r "$srcdir/files" "srcpkgs/$pkgname/"
                   [ -d "$srcdir/patches" ] && cp -r "$srcdir/patches" "srcpkgs/$pkgname/"
+                  # A private distfile needs a token, which xbps-src cannot send;
+                  # the build workflow runs this before the fetch stage looks.
+                  [ -f "$srcdir/prefetch.sh" ] && cp "$srcdir/prefetch.sh" "srcpkgs/$pkgname/"
 
                   # Reset revision to 1 when version changes
                   if [ -n "$old_version" ] && [ -n "$new_version" ] && [ "$old_version" != "$new_version" ]; then
