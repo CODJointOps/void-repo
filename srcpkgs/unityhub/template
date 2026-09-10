@@ -1,0 +1,38 @@
+pkgname=unityhub
+version=3.21.2
+revision=1
+archs="x86_64"
+hostmakedepends="tar zstd"
+depends="ca-certificates desktop-file-utils glib gnupg hicolor-icon-theme libdrm
+ libnotify libsecret libuuid libXScrnSaver libXtst tar unzip xdg-utils zip"
+short_desc="Official Unity Hub"
+maintainer="Wizzard <rich@bandaholics.cash>"
+license="custom:Unity-Terms-of-Service"
+homepage="https://unity.com/unity-hub"
+repository="nonfree"
+restricted=yes
+nostrip=yes
+noshlibprovides=yes
+lib32disabled=yes
+
+_debfile="UnityHubSetup-${version}-amd64.deb"
+distfiles="https://hub.unity3d.com/linux/repos/deb/pool/main/u/unity/unityhub_amd64/${_debfile}"
+checksum=d3ee77a9fb40cdb5e2233b5db71471fa57dc433f7d3cb663a00396c7c6529413
+
+do_extract() {
+	ar x "${XBPS_SRCDISTDIR}/${pkgname}-${version}/${_debfile}"
+	tar xf $(ls data.tar.*) -C "${wrksrc}"
+}
+
+do_install() {
+	vmkdir usr/lib
+	vcopy usr/lib/unityhub usr/lib
+
+	vmkdir usr/bin
+	ln -s ../lib/unityhub/unityhub "${DESTDIR}/usr/bin/unityhub"
+
+	vinstall usr/share/applications/unityhub.desktop 0644 usr/share/applications
+	vcopy usr/share/icons/hicolor usr/share/icons
+	vinstall usr/share/metainfo/com.unity3d.unityhub.metainfo.xml 0644 usr/share/metainfo
+	vlicense usr/share/doc/unityhub/copyright
+}
