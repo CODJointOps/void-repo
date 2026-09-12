@@ -63,6 +63,7 @@ On first refresh, accept the repo signing key prompt.
 | `aquamarine` | `all` |
 | `bitwarden` | `x86_64` |
 | `claude-desktop` | `x86_64` |
+| `dz-voice` | `x86_64` |
 | `ente-auth` | `x86_64` (`only_for_archs`) |
 | `glaze` | `all` |
 | `helium-browser` | `x86_64` |
