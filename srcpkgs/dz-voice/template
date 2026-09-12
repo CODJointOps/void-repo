@@ -1,0 +1,71 @@
+# Template file for 'dz-voice'
+#
+# A prebuilt binary rather than a source build. The source repository is
+# private, so building here would mean putting a credential that can read the
+# source into a public repository's CI, and that credential is the source. The
+# distfile is the same signed self-extracting installer the app's own updater
+# consumes, produced by scripts/release-all.sh on the Linux dev box. It is
+# glibc x86_64 and nothing else.
+pkgname=dz-voice
+version=0.4.0
+revision=1
+archs="x86_64"
+short_desc="Local push-to-talk dictation that copies transcripts to your clipboard"
+maintainer="Wizzard <rich@bandaholics.cash>"
+license="custom:Proprietary"
+homepage="https://git.deadzone.lol/Wizzard/voice-paste-dist"
+changelog="https://git.deadzone.lol/Wizzard/voice-paste-dist/releases"
+
+# Gitea's /attachments/<uuid> route and not /releases/download/latest/<name>:
+# the public host sits behind Anubis, which answers a plain fetcher with an
+# HTML challenge page instead of the file. The uuid changes on every upload, so
+# .gitea/workflows/update.yml re-resolves it from the release API on each bump.
+_attachment=d60b9bfc-eb10-4365-9a89-6a3924c46e59
+_runfile="dz-voice-${version}-x86_64-unknown-linux-gnu.run"
+distfiles="https://git.deadzone.lol/attachments/${_attachment}>${_runfile}"
+checksum=4eb1214d317229c5642d0f5c3b1149e30c806736f53d49b68a7e553070bb4dcf
+
+# worker is a PyInstaller one-file freeze: its payload is appended past the end
+# of the ELF and strip discards it.
+nostrip=yes
+lib32disabled=yes
+
+# The tray icon library is dlopen'd, so nothing links against it and the shlib
+# scan cannot find it. wl-clipboard backs the transcript copy on Wayland.
+depends="libayatana-appindicator wl-clipboard"
+
+do_extract() {
+	local _run="${XBPS_SRCDISTDIR}/${pkgname}-${version}/${_runfile}" _line
+
+	mkdir -p "${wrksrc}"
+
+	# The .run is a POSIX sh stub with a gzipped tar appended after a line
+	# holding nothing but __ARCHIVE__. Match whole lines only: the stub's own
+	# awk call names the same marker inside a longer line.
+	_line=$(grep -aFxn -m1 '__ARCHIVE__' "${_run}" | cut -d: -f1)
+	[ -n "${_line}" ] || msg_error "no __ARCHIVE__ marker in ${_runfile}\n"
+
+	# bsdtar and not tar: base-chroot ships bsdtar, and it reads gzip itself.
+	tail -n +$((_line + 1)) "${_run}" | bsdtar -xf - -C "${wrksrc}"
+}
+
+do_install() {
+	# Tauri resolves the worker sidecar next to the main binary, so the two
+	# stay together in libdir and /usr/bin gets a symlink. The push-to-talk
+	# keybind is a compositor binding running `dz-voice --toggle`, which needs
+	# the name on PATH.
+	vmkdir usr/lib/${pkgname}
+	vinstall dz-voice 755 usr/lib/${pkgname}
+	vinstall worker 755 usr/lib/${pkgname}
+	vmkdir usr/bin
+	ln -s ../lib/${pkgname}/dz-voice "${DESTDIR}/usr/bin/dz-voice"
+
+	vinstall "${FILESDIR}/dz-voice.desktop" 644 usr/share/applications
+	vinstall icon.png 644 usr/share/icons/hicolor/512x512/apps dz-voice.png
+	vinstall icon.png 644 usr/share/pixmaps dz-voice.png
+
+	# Marks the install as distro-managed. Without it the app offers its own
+	# .run reinstaller, which would overwrite these root-owned files behind
+	# xbps's back; updates come from the repo instead.
+	: > "${DESTDIR}/usr/lib/${pkgname}/.managed"
+}

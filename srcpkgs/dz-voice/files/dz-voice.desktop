@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=DZ Voice
+Comment=Local push-to-talk dictation
+Exec=dz-voice
+Icon=dz-voice
+Terminal=false
+Categories=Utility;
+StartupWMClass=dz-voice
+Keywords=voice;dictation;whisper;speech;transcribe;
