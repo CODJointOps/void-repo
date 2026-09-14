@@ -1,6 +1,6 @@
 # Template file for 'claude-desktop'
 pkgname=claude-desktop
-version=1.52386.3
+version=1.52386.6
 revision=1
 archs="x86_64 aarch64"
 hostmakedepends="tar xz"
@@ -25,11 +25,11 @@ _repo=https://downloads.claude.ai/claude-desktop/apt/stable
 case "${XBPS_TARGET_MACHINE}" in
 x86_64)
 	_deb_arch=amd64
-	checksum=797594ce81c19d3f6b5373fdb801699c757016f5600715fa1751ec34e8688456
+	checksum=2e83a76c6ed9187671bfe80664fc6d59840171f4a2a81f408662c879a67f4e0a
 	;;
 aarch64)
 	_deb_arch=arm64
-	checksum=3396045604b019581621b07865571609dd6fcb7340a2e9328ef031685d2822fb
+	checksum=882f4a52a86b07ecff989d8db87c5ec292d43f21d0a6557d3e8b01e113b18190
 	;;
 *)
 	broken="No distfiles available for this target"
