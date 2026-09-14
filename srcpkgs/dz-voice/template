@@ -7,7 +7,7 @@
 # consumes, produced by scripts/release-all.sh on the Linux dev box. It is
 # glibc x86_64 and nothing else.
 pkgname=dz-voice
-version=0.4.0
+version=0.5.0
 revision=1
 archs="x86_64"
 short_desc="Local push-to-talk dictation that copies transcripts to your clipboard"
@@ -20,10 +20,10 @@ changelog="https://git.deadzone.lol/Wizzard/voice-paste-dist/releases"
 # the public host sits behind Anubis, which answers a plain fetcher with an
 # HTML challenge page instead of the file. The uuid changes on every upload, so
 # .gitea/workflows/update.yml re-resolves it from the release API on each bump.
-_attachment=d60b9bfc-eb10-4365-9a89-6a3924c46e59
+_attachment=804707e3-a67f-408c-818b-a479e3eeaa4a
 _runfile="dz-voice-${version}-x86_64-unknown-linux-gnu.run"
 distfiles="https://git.deadzone.lol/attachments/${_attachment}>${_runfile}"
-checksum=4eb1214d317229c5642d0f5c3b1149e30c806736f53d49b68a7e553070bb4dcf
+checksum=a0f9be4635924ac1c7005721c1ec824578da7a40d2d47b00e14eab4f3d213dc0
 
 # worker is a PyInstaller one-file freeze: its payload is appended past the end
 # of the ELF and strip discards it.
