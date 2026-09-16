@@ -1,0 +1,68 @@
+Hyprland can close the event socket while the compositor remains running.
+Reconnect with capped backoff and refresh the IPC models after connecting so
+missed events do not leave stale state.
+
+--- a/src/wayland/hyprland/ipc/connection.hpp
++++ b/src/wayland/hyprland/ipc/connection.hpp
+@@ -11,0 +12 @@
++#include <qtimer.h>
+@@ -129,0 +131 @@
++	void reconnectEventSocket();
+@@ -141,0 +144,2 @@
++	void connectEventSocket();
++	void scheduleEventSocketReconnect();
+@@ -146,0 +151,2 @@
++	QTimer mReconnectTimer;
++	int mReconnectDelayMs = 0;
+--- a/src/wayland/hyprland/ipc/connection.cpp
++++ b/src/wayland/hyprland/ipc/connection.cpp
+@@ -70,0 +71,2 @@
++	this->mReconnectTimer.setSingleShot(true);
++	QObject::connect(&this->mReconnectTimer, &QTimer::timeout, this, &HyprlandIpc::reconnectEventSocket);
+@@ -89,4 +91 @@
+-		this->eventSocket.connectToServer(this->mEventSocketPath, QLocalSocket::ReadOnly);
+-		this->refreshMonitors(true);
+-		this->refreshWorkspaces(true);
+-		this->refreshToplevels();
++		this->connectEventSocket();
+@@ -106,0 +106,18 @@
++void HyprlandIpc::connectEventSocket() {
++	if (this->eventSocket.state() != QLocalSocket::UnconnectedState) return;
++	this->eventSocket.connectToServer(this->mEventSocketPath, QLocalSocket::ReadOnly);
++}
++
++void HyprlandIpc::scheduleEventSocketReconnect() {
++	if (this->mReconnectTimer.isActive()) return;
++
++	this->mReconnectDelayMs =
++	    this->mReconnectDelayMs == 0 ? 250 : std::min(this->mReconnectDelayMs * 2, 10000);
++
++	qCWarning(logHyprlandIpc) << "Reconnecting to Hyprland event socket in"
++	                          << this->mReconnectDelayMs << "ms.";
++	this->mReconnectTimer.start(this->mReconnectDelayMs);
++}
++
++void HyprlandIpc::reconnectEventSocket() { this->connectEventSocket(); }
++
+@@ -108,0 +126 @@
++		this->valid = true;
+@@ -109,0 +128,2 @@
++		this->mReconnectTimer.stop();
++		this->mReconnectDelayMs = 0;
+@@ -110,0 +131,4 @@
++
++		this->refreshMonitors(true);
++		this->refreshWorkspaces(true);
++		this->refreshToplevels();
+@@ -112 +136,7 @@
+-	} else if (state == QLocalSocket::UnconnectedState && this->valid) {
++		return;
++	}
++
++	if (state != QLocalSocket::UnconnectedState) return;
++
++	if (this->valid) {
++		this->valid = false;
+@@ -116 +146 @@
+-	this->valid = state == QLocalSocket::ConnectedState;
++	this->scheduleEventSocketReconnect();
