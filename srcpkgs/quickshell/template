@@ -12,7 +12,7 @@ makedepends="cli11 qt6-base-private-devel qt6-declarative-private-devel
  cpptrace-devel polkit-devel Vulkan-Headers libdrm-devel glib-devel"
 depends="qt6-svg"
 short_desc="Flexible QtQuick-based desktop shell toolkit"
-maintainer="classabbyamp <void@placeviolette.net>"
+maintainer="Rich <rich@bandaholics.cash>"
 license="LGPL-3.0-only"
 homepage="https://quickshell.org"
 changelog="https://quickshell.org/changelog/"
