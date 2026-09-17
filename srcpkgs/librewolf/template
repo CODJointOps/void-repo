@@ -1,6 +1,6 @@
 # Template file for 'librewolf'
 pkgname=librewolf
-version=155.0.1
+version=156.0
 revision=1
 _rev=1
 archs="x86_64 aarch64"
@@ -17,11 +17,11 @@ _tag="${version}-${_rev}"
 case "${XBPS_TARGET_MACHINE}" in
 x86_64)
 	_upstream_arch=x86_64
-	_checksum=8db91b436db6eb7a16b7c581bec22c146c92c0e67a536717ba0b8cac05206ef1
+	_checksum=bdf26e9c7c694aadcc6fb0ffbd71b9b00192b0b42ad1797194cd74caaa6f8206
 	;;
 aarch64)
 	_upstream_arch=arm64
-	_checksum=ce38454a97b86da365eef5f14640a6eeea475c9fd1230b878397145751a46120
+	_checksum=028de2a434e30a2d4723b03748093e7fb9053b2be2244463a7608b419dfc1999
 	;;
 *)
 	broken="No distfiles available for ${XBPS_TARGET_MACHINE}"
