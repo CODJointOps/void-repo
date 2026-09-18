@@ -1,0 +1,57 @@
+# Template file for 'cline-desktop'
+pkgname=cline-desktop
+version=0.0.32
+revision=1
+archs="x86_64"
+hostmakedepends="ImageMagick tar"
+depends="desktop-file-utils gtk+3 hicolor-icon-theme libayatana-appindicator
+ libwebkit2gtk41 xdg-utils"
+short_desc="Cline desktop app - autonomous coding agent"
+maintainer="Wizzard <rich@bandaholics.cash>"
+license="Apache-2.0"
+homepage="https://cline.bot"
+changelog="https://github.com/cline/cline/releases"
+# Upstream publishes macOS and Windows only, so the distfile is a Linux build of
+# the same tag made by this package's own CI.
+distfiles="https://git.deadzone.lol/Wizzard/cline-desktop-void/releases/download/v${version}/cline-desktop-${version}-x86_64.deb"
+checksum=df675417482d5daeee5ef8df1f82caa19e006d4c727511b3445ad392c06ff05c
+# code-sidecar is a Bun single-file executable: its JavaScript payload is
+# appended to the ELF, and strip discards it.
+nostrip=yes
+lib32disabled=yes
+
+do_extract() {
+	ar x "${XBPS_SRCDISTDIR}/${pkgname}-${version}/cline-desktop-${version}-x86_64.deb"
+	tar xf $(ls data.tar.*) -C "${wrksrc}"
+}
+
+do_install() {
+	vmkdir usr/lib
+	vcopy usr/lib/Cline usr/lib
+
+	# The app resolves its sidecar next to its own binary, so both stay in bin.
+	vbin usr/bin/cline-app
+	vbin usr/bin/code-sidecar
+
+	# The aarch64 helper is dead weight in an x86_64 package and makes the
+	# shlib scan resolve against a loader that is not installed.
+	rm -f "${DESTDIR}/usr/lib/Cline/bin/remote-helpers"/*-aarch64-*
+
+	# Upstream's entry has no Categories, Keywords or Comment, so it does not
+	# show up under Development or match a search for "cline".
+	vinstall "${FILESDIR}/cline.desktop" 0644 usr/share/applications
+
+	# Upstream ships 32, 128 and a 256 image stored in a 256x256@2 directory.
+	_icon=usr/share/icons/hicolor/256x256@2/apps/cline-app.png
+	vinstall "${_icon}" 0644 usr/share/pixmaps cline-app.png
+	vinstall "${_icon}" 0644 usr/share/icons/hicolor/256x256/apps cline-app.png
+	vinstall usr/share/icons/hicolor/128x128/apps/cline-app.png 0644 \
+		usr/share/icons/hicolor/128x128/apps
+	for _size in 16 24 32 48 64; do
+		magick "${_icon}" -resize ${_size}x${_size} "cline-${_size}.png"
+		vinstall "cline-${_size}.png" 0644 \
+			"usr/share/icons/hicolor/${_size}x${_size}/apps" cline-app.png
+	done
+
+	vlicense "${FILESDIR}/LICENSE"
+}

@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Cline
+GenericName=AI Coding Agent
+Comment=Autonomous coding agent for your projects
+Exec=cline-app
+Icon=cline-app
+Terminal=false
+StartupNotify=true
+StartupWMClass=cline-app
+Categories=Development;IDE;
+Keywords=cline;ai;agent;coding;assistant;llm;
