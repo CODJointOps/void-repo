@@ -94,3 +94,4 @@ On first refresh, accept the repo signing key prompt.
 | `tradingview` | `x86_64`, `aarch64` |
 | `zerotier-one` | `x86_64`, `aarch64` (`+musl`) |
 | `codex-desktop` | `x86_64`, `aarch64` |
+| `cline-desktop` | `x86_64` |
