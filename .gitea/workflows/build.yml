@@ -550,6 +550,25 @@ jobs:
           sudo -Eu builder common/travis/prepare.sh &&
           common/travis/fetch-xtools.sh
 
+      - name: Install cross compiler
+        if: ${{ steps.changed.outputs.pkgs != '' && matrix.config.host != matrix.config.arch }}
+        run: |
+          cd void-packages
+          case "$BOOTSTRAP" in
+              x86_64)
+                  triplet=aarch64-linux-gnu
+                  repository=https://repo-fastly.voidlinux.org/current
+                  ;;
+              x86_64-musl)
+                  triplet=aarch64-linux-musl
+                  repository=https://repo-fastly.voidlinux.org/current/musl
+                  ;;
+          esac
+          sudo -Eu builder timeout 20m xbps-install \
+              -c "$PWD/hostdir/repocache-$BOOTSTRAP" \
+              -r "$PWD/masterdir-$BOOTSTRAP" \
+              -i -R "$repository" -Sy "cross-$triplet"
+
       - name: Build
         id: build_step
         if: ${{ steps.changed.outputs.pkgs != '' || steps.changed.outputs.removed != '' }}
