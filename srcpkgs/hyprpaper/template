@@ -1,7 +1,7 @@
 # Template file for 'hyprpaper'
 pkgname=hyprpaper
 version=0.8.4
-revision=7
+revision=8
 build_style=cmake
 # hyprutils and aquamarine public headers include <pixman.h> and
 # <drm_fourcc.h>, which live in subdirs these targets do not pick up
@@ -10,7 +10,8 @@ configure_args="--no-warn-unused-cli -DCMAKE_BUILD_TYPE:STRING=Release -DCMAKE_I
 hostmakedepends="cmake pkgconf hyprwayland-scanner hyprwire hyprland-protocols wayland-protocols"
 makedepends="cairo-devel file-devel libjpeg-turbo-devel libwebp-devel
  hyprgraphics hyprutils hyprlang hyprtoolkit hyprwire pango-devel pixman-devel
- wlroots-devel"
+ wlroots-devel abseil-cpp-devel iniparser-devel libdrm-devel libgbm-devel
+ libglvnd-devel libxkbcommon-devel wayland-devel wayland-protocols"
 short_desc="Fast wallpaper utility for wlroots compositors with IPC controls"
 maintainer="Rich <rich@bandaholics.cash>"
 license="BSD-3-Clause"

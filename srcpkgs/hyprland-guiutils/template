@@ -1,7 +1,7 @@
 # Template file for 'hyprland-guiutils'
 pkgname=hyprland-guiutils
 version=0.2.2
-revision=5
+revision=6
 build_style=cmake
 # hyprutils and aquamarine public headers include <pixman.h> and
 # <drm_fourcc.h>, which live in subdirs these targets do not pick up
@@ -10,7 +10,8 @@ configure_args="--no-warn-unused-cli -DCMAKE_BUILD_TYPE:STRING=Release \
  -DCMAKE_INSTALL_PREFIX:PATH=/usr"
 hostmakedepends="cmake ninja pkgconf"
 makedepends="aquamarine cairo-devel hyprgraphics hyprlang
- hyprtoolkit hyprutils libdrm-devel pixman-devel libxkbcommon-devel"
+ hyprtoolkit hyprutils libdrm-devel pixman-devel libxkbcommon-devel abseil-cpp-devel iniparser-devel
+ libgbm-devel libglvnd-devel pango-devel wayland-devel wayland-protocols"
 depends="hyprland-qt-support"
 short_desc="Hyprland GUI utilities (successor to hyprland-qtutils)"
 maintainer="Rich <rich@bandaholics.cash>"

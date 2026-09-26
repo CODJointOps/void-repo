@@ -1,8 +1,8 @@
 # Template file for 'hyprland-protocols'
 pkgname=hyprland-protocols
 version=0.7.1
-revision=1
-build_style=meson
+revision=2
+build_style=cmake
 short_desc="Wayland protocol extensions for Hyprland"
 maintainer="Rich <rich@bandaholics.cash>"
 license="BSD-3-Clause"

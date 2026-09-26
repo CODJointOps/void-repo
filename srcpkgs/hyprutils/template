@@ -1,10 +1,12 @@
 # Template file for 'hyprutils'
 pkgname=hyprutils
 version=0.14.2
-revision=2
+revision=3
 build_style=cmake
 hostmakedepends="pkg-config"
 makedepends="pixman-devel"
+# hyprutils.pc Requires pixman-1 and there is no -devel split
+depends="pixman-devel"
 short_desc="Hyprland utilities library used across the ecosystem"
 maintainer="Rich <rich@bandaholics.cash>"
 license="BSD-3-Clause"
