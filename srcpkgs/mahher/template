@@ -11,7 +11,7 @@
 # The binary is built on Void, on the platform docs/PLATFORMS.md calls tier 1,
 # by tools/release.sh in the source tree. It is glibc x86_64 and nothing else.
 pkgname=mahher
-version=0.5.4
+version=0.5.5
 revision=1
 archs="x86_64"
 short_desc="Native Linux level editor for Source engine maps"
@@ -21,8 +21,8 @@ homepage="https://git.deadzone.lol/Signal/mahher"
 # The dist branch of this repository, which is public, so the fetch needs no
 # credential. media/branch and not raw/branch: the tarball is an LFS object and
 # raw hands back the pointer file.
-distfiles="https://git.deadzone.lol/attachments/90c2dd25-3462-446d-a1f4-c7df67b12b30>mahher-0.5.4-x86_64-linux.tar.gz"
-checksum=8c72ab2cbfd5658b691f0b0138bc23b1fb7bd622f8d28a3f5265ea2a445ae744
+distfiles="https://git.deadzone.lol/attachments/f36261a1-bcf1-40b5-8726-c017295a0e42>mahher-0.5.5-x86_64-linux.tar.gz"
+checksum=9055611a2bc392f29e27a37241a143a8e3ad24a9c20c024d6718ad537e4eea2d
 # mahher-debug writes every thread's stack on a freeze, a panic or a fatal
 # signal. Stripped, that report is a list of addresses and the feature is gone.
 nostrip=yes
