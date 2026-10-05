@@ -1,6 +1,6 @@
 # Template file for 'codex-desktop'
 pkgname=codex-desktop
-version=26.930.41038
+version=26.930.51102
 revision=1
 archs="x86_64 aarch64"
 hostmakedepends="ImageMagick tar xz"
@@ -24,12 +24,12 @@ case "${XBPS_TARGET_MACHINE}" in
 x86_64)
 	_deb_arch=amd64
 	_prebuild_keep="x64"
-	checksum=ee7854145554718d7239d01ea37d44f6ba1e0ba4a93f47ac097d6e0f964da47c
+	checksum=637c3c94bc50f8ee33a15e2e28ec7f92a787f0943e700efe111bc0bf0d4813b4
 	;;
 aarch64)
 	_deb_arch=arm64
 	_prebuild_keep="arm64"
-	checksum=a4e76853b000efa9d6c32932ddd19973b4a2983c71d3bd144e5f2b9151cbb16b
+	checksum=04d0231554d313e13ab1d9e53364c8f0ff3537c46c78345ad2eeb05f039a4d7a
 	;;
 *)
 	broken="No distfiles available for this target"
