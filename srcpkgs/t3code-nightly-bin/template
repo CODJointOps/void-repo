@@ -1,7 +1,7 @@
 # Template file for 't3code-nightly-bin'
 pkgname=t3code-nightly-bin
 version=0.0.46.nightly.20261008.2849
-revision=1
+revision=2
 archs="x86_64 aarch64"
 hostmakedepends="bsdtar"
 depends="alsa-lib at-spi2-core gtk+3 libgbm libnotify libsecret libXScrnSaver
@@ -31,6 +31,8 @@ skip_extraction="T3-Code-LICENSE.txt"
 
 do_install() {
 	vcopy opt /opt
+	# XBPS owns updates; the upstream feed would try to install Debian packages.
+	rm "$DESTDIR/opt/T3 Code (Nightly)/resources/app-update.yml"
 	local modules="$DESTDIR/opt/T3 Code (Nightly)/resources/app.asar.unpacked/node_modules"
 	# Upstream ships unused musl and foreign node-pty prebuilds in glibc packages.
 	find "$modules" -type d -name '*-musl' -prune -exec rm -rf {} +
