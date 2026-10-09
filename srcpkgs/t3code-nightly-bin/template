@@ -1,0 +1,48 @@
+# Template file for 't3code-nightly-bin'
+pkgname=t3code-nightly-bin
+version=0.0.46.nightly.20261008.2849
+revision=1
+archs="x86_64 aarch64"
+hostmakedepends="bsdtar"
+depends="alsa-lib at-spi2-core gtk+3 libgbm libnotify libsecret libXScrnSaver
+ libXtst nss util-linux-libs xdg-utils hicolor-icon-theme"
+short_desc="Desktop control surface for coding agents (nightly)"
+maintainer="Wizzard <rich@bandaholics.cash>"
+license="MIT"
+homepage="https://t3.codes"
+changelog="https://github.com/pingdotgg/t3code/releases"
+conflicts="t3code>=0 t3code-bin>=0"
+nostrip=yes
+nopie=yes
+noshlibprovides=yes
+amd64_checksum=0c16e21501187104493fec3077fb0391ac7c48441e00cabc05757537d230fb92
+arm64_checksum=4a6931d5a99a0cd7b0105f9a327d53d38414c18ee8e0060b185d38a2eba773dd
+
+case "$XBPS_TARGET_MACHINE" in
+x86_64) _deb_arch=amd64; _deb_checksum=$amd64_checksum; _other_arch=arm64 ;;
+aarch64) _deb_arch=arm64; _deb_checksum=$arm64_checksum; _other_arch=x64 ;;
+esac
+_upstream_version="${version/.nightly./-nightly.}"
+distfiles="https://github.com/pingdotgg/t3code/releases/download/v${_upstream_version}/T3-Code-${_upstream_version}-${_deb_arch}.deb
+ https://raw.githubusercontent.com/pingdotgg/t3code/v${_upstream_version}/LICENSE>T3-Code-LICENSE.txt"
+checksum="${_deb_checksum}
+ 935d8f2af0c703f9c39517ee57cc4930b19d02d533be930b63f0e82f93614b43"
+skip_extraction="T3-Code-LICENSE.txt"
+
+do_install() {
+	vcopy opt /opt
+	local modules="$DESTDIR/opt/T3 Code (Nightly)/resources/app.asar.unpacked/node_modules"
+	# Upstream ships unused musl and foreign node-pty prebuilds in glibc packages.
+	find "$modules" -type d -name '*-musl' -prune -exec rm -rf {} +
+	rm -rf "$modules/node-pty/prebuilds/linux-$_other_arch"
+	vcopy usr/share/icons /usr/share
+	vinstall usr/share/applications/t3code.desktop 644 usr/share/applications t3code-nightly.desktop
+	vsed -i 's|^Exec=.*|Exec=t3code-nightly %U|' "$DESTDIR/usr/share/applications/t3code-nightly.desktop"
+	vmkdir usr/bin
+	ln -s '/opt/T3 Code (Nightly)/t3code' "$DESTDIR/usr/bin/t3code-nightly"
+	ln -s t3code-nightly "$DESTDIR/usr/bin/t3code"
+	chmod 4755 "$DESTDIR/opt/T3 Code (Nightly)/chrome-sandbox"
+	vlicense "$XBPS_SRCDISTDIR/$pkgname-$version/T3-Code-LICENSE.txt" LICENSE
+	vlicense 'opt/T3 Code (Nightly)/LICENSE.electron.txt'
+	vlicense 'opt/T3 Code (Nightly)/LICENSES.chromium.html'
+}
