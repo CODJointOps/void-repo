@@ -1,6 +1,6 @@
 # Template file for 't3code-nightly-bin'
 pkgname=t3code-nightly-bin
-version=0.0.46.nightly.20261012.3010
+version=0.0.46.nightly.20261012.3021
 revision=1
 archs="x86_64 aarch64"
 hostmakedepends="bsdtar"
@@ -15,8 +15,8 @@ conflicts="t3code>=0 t3code-bin>=0"
 nostrip=yes
 nopie=yes
 noshlibprovides=yes
-amd64_checksum=6febcb5c7cd0671f6da679e5513ed351d2c9086c46ed880fed54802026bf763d
-arm64_checksum=418bfef3efe81e9f943a86e44adbd44d186b5ab2794df0080dc30a718e2b9cfc
+amd64_checksum=96d75d10090de4ad09e0168c83e9032a350179e5f72553cfc5838f8cd15395b0
+arm64_checksum=ade0bd345188dc6f6bc1accb9eb1a8844dcd10c49680e5e6a0d4af6dbe6b6a63
 
 case "$XBPS_TARGET_MACHINE" in
 x86_64) _deb_arch=amd64; _deb_checksum=$amd64_checksum; _other_arch=arm64 ;;
