@@ -1,6 +1,6 @@
 # Template file for 'cline-desktop'
 pkgname=cline-desktop
-version=0.0.47
+version=0.0.48
 revision=1
 archs="x86_64"
 hostmakedepends="ImageMagick tar"
@@ -14,7 +14,7 @@ changelog="https://github.com/cline/cline/releases"
 # Upstream publishes macOS and Windows only, so the distfile is a Linux build of
 # the same tag made by this package's own CI.
 distfiles="https://git.deadzone.lol/Wizzard/cline-desktop-void/releases/download/v${version}/cline-desktop-${version}-x86_64.deb"
-checksum=aa564558e828edc30915eb4f3f8f4588a63d00a2ff256a9a6fcfb523e47c3879
+checksum=bd930241f64fa0e9a2a335e3a7738f37e20705d686b04a68de7673700ac03f64
 # code-sidecar is a Bun single-file executable: its JavaScript payload is
 # appended to the ELF, and strip discards it.
 nostrip=yes
