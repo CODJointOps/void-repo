@@ -1,13 +1,13 @@
 pkgname=vesktop
-version=1.6.7
+version=1.6.8
 revision=1
 archs="x86_64 aarch64"
 short_desc="Custom Discord desktop client"
 maintainer="Wizzard <rich@bandaholics.cash>"
 license="GPL-3.0-or-later"
 homepage="https://github.com/Vencord/Vesktop"
-amd64_checksum=0204a3fcf8861d11debf72a9be70423d2dca6d4698766b6fda7cfe39beea6a61
-arm64_checksum=2ea11d882ae60c5c7cda8ba9057f36d66e490d32276ad3f7a99d3de8345e26cc
+amd64_checksum=9cc10306d8ab79d5e42fd5a51eea9dbcc8d6928a6342492ef42f41d3a9b24209
+arm64_checksum=fbd304b6df82f0076140462912e30e41a713ae7d659963369cfc28aa533883b3
 
 _deb_arch=
 _deb_checksum=
