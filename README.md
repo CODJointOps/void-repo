@@ -96,3 +96,4 @@ On first refresh, accept the repo signing key prompt.
 | `codex-desktop` | `x86_64`, `aarch64` |
 | `cline-desktop` | `x86_64` |
 | `t3code-nightly-bin` | `x86_64`, `aarch64` (glibc) |
+| `element-desktop` | `x86_64` |
