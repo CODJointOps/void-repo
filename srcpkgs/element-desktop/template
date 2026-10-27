@@ -1,0 +1,37 @@
+# Template file for 'element-desktop'
+# Repackages Element's official prebuilt Linux tarball (bundled Electron)
+# so it tracks upstream releases instead of Void's lagging source build.
+pkgname=element-desktop
+version=1.12.13
+revision=1
+archs="x86_64"
+depends="desktop-file-utils hicolor-icon-theme libnotify libsecret xdg-utils nss gtk+3"
+short_desc="Glossy Matrix collaboration client, desktop version (official build)"
+maintainer="Wizzard <rich@bandaholics.cash>"
+license="Apache-2.0"
+homepage="https://element.io"
+changelog="https://github.com/element-hq/element-desktop/releases"
+distfiles="https://packages.element.io/desktop/install/linux/glibc-x86-64/element-desktop-${version}.tar.gz"
+checksum=2e345c42b2240e68da1156d29f2a22c447e33666443ffd29956d0d145bc1d1bf
+replaces="riot-desktop>=0"
+
+lib32disabled=yes
+nostrip=yes
+noshlibprovides=yes
+noverifyrdeps=yes
+
+do_install() {
+	vmkdir opt/Element
+	vcopy "*" opt/Element
+	chmod 4755 "${DESTDIR}/opt/Element/chrome-sandbox"
+
+	vmkdir usr/bin
+	ln -sf /opt/Element/element-desktop "${DESTDIR}/usr/bin/element-desktop"
+	ln -sf element-desktop "${DESTDIR}/usr/bin/riot-desktop"
+
+	vinstall "${FILESDIR}/element-desktop.desktop" 0644 usr/share/applications
+	vinstall resources/build/icon.png 0644 usr/share/icons/hicolor/512x512/apps element-desktop.png
+
+	vlicense LICENSE.electron.txt
+	vlicense LICENSES.chromium.html
+}
