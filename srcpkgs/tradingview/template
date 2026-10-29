@@ -1,5 +1,5 @@
 pkgname=tradingview
-version=3.4.1
+version=3.5.0
 revision=1
 archs="x86_64"
 hostmakedepends="squashfs-tools"
@@ -16,10 +16,10 @@ nostrip=yes
 noverifyrdeps=yes
 
 _snap_id="nJdITJ6ZJxdvfu8Ch7n5kH5P99ClzBYV"
-_snap_rev=74
+_snap_rev=75
 
 distfiles="https://api.snapcraft.io/api/v1/snaps/download/${_snap_id}_${_snap_rev}.snap>tradingview-${version}-${_snap_rev}.snap"
-checksum=7c355bf31609e17b57434048217530da6b3451ab536dbae681bc0d47d706f670
+checksum=0b5385d9699597fe2a51140301d9c3b8c1373683dfcd674088baf91c06bc7bbd
 
 do_extract() {
 	mkdir -p "${wrksrc}"
