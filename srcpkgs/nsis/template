@@ -1,0 +1,40 @@
+# Template file for 'nsis'
+pkgname=nsis
+version=3.11
+revision=1
+wrksrc="nsis-${version}-src"
+only_for_archs="x86_64"
+hostmakedepends="scons cross-i686-w64-mingw32 cross-x86_64-w64-mingw32"
+makedepends="zlib-devel"
+short_desc="Windows installer compiler with MinGW-built stubs and plugins"
+maintainer="Wizzard <noreply@deadzone.lol>"
+license="Zlib, bzip2-1.0.6, CPL-1.0"
+homepage="https://nsis.sourceforge.io/"
+distfiles="${SOURCEFORGE_SITE}/nsis/NSIS%203/${version}/nsis-${version}-src.tar.bz2"
+checksum=19e72062676ebdc67c11dc032ba80b979cdbffd3886c60b04bb442cdd401ff4b
+nocross=yes
+nostrip_files="/usr/share/nsis/*"
+
+_scons() {
+	scons ${makejobs} PREFIX=/usr PREFIX_CONF=/etc VERSION=${version} \
+		SKIPUTILS="MakeLangId,Makensisw,NSIS Menu,SubStart,VPatch/Source/GenPat,zip2exe" \
+		STRIP_CP=no "$@"
+}
+
+do_build() {
+	_scons TARGET_ARCH=x86 XGCC_W32_PREFIX=i686-w64-mingw32- makensis stubs plugins utils
+	_scons TARGET_ARCH=amd64 XGCC_W32_PREFIX=x86_64-w64-mingw32- stubs plugins utils
+}
+
+do_install() {
+	local arch prefix
+	for arch in x86 amd64; do
+		case "$arch" in
+			x86) prefix=i686-w64-mingw32- ;;
+			amd64) prefix=x86_64-w64-mingw32- ;;
+		esac
+		_scons TARGET_ARCH=$arch XGCC_W32_PREFIX=$prefix PREFIX_DEST="$DESTDIR" \
+			install-compiler install-conf install-stubs install-plugins install-data install-utils
+	done
+	vlicense COPYING
+}
