@@ -25,7 +25,9 @@ jobs:
         - /dev:/dev
         # Persistent caches on jelly; only the void-heavy runner may mount them.
         - /var/cache/void-ci/hostdir:/void-cache/hostdir
-        - /var/cache/void-ci/xbps-${{ matrix.config.libc }}:/var/cache/xbps
+        # Expressions are not expanded here, so per-libc cache dirs are set
+        # with an xbps cachedir in "Prepare container".
+        - /var/cache/void-ci/xbps:/void-cache/xbps
       env:
         ARCH: '${{ matrix.config.arch }}'
         BOOTSTRAP: '${{ matrix.config.host }}'
@@ -50,9 +52,13 @@ jobs:
       - name: Prepare container
         run: |
           mkdir -p /etc/xbps.d && cp /usr/share/xbps.d/*-repository-*.conf /etc/xbps.d/
-          sed -i 's|repo-default|repo-ci|g' /etc/xbps.d/*-repository-*.conf
+          # repo-ci and repo-default (Helsinki) refused connections in Nov 2026;
+          # the cross compiler step already used repo-fastly.
+          sed -i 's|repo-default|repo-fastly|g' /etc/xbps.d/*-repository-*.conf
+          # Persistent package cache, one dir per native arch (glibc vs musl).
+          echo "cachedir=/void-cache/xbps/$(xbps-uhelper arch)" > /etc/xbps.d/00-cachedir.conf
           xbps-install -Syu xbps && xbps-install -yu && xbps-install -y sudo bash curl git git-lfs
-          # /var/cache/xbps persists between runs; drop superseded package versions.
+          # Drop superseded package versions from the persistent cache.
           xbps-remove -Oy || true
           useradd -G xbuilder -M builder
 
@@ -562,7 +568,7 @@ jobs:
           rm -rf hostdir && ln -s /void-cache/hostdir hostdir
           echo XBPS_CCACHE=yes >> etc/conf
           chown -R builder:builder . /void-cache/hostdir &&
-          sudo -Eu builder common/travis/set_mirror.sh &&
+          sudo -Eu builder sed -i 's:repo-default\.voidlinux\.org:repo-fastly.voidlinux.org:g' etc/xbps.d/repos-remote*.conf &&
           sudo -Eu builder common/travis/prepare.sh &&
           common/travis/fetch-xtools.sh || exit 1
 
