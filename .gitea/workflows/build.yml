@@ -32,6 +32,9 @@ jobs:
         ARCH: '${{ matrix.config.arch }}'
         BOOTSTRAP: '${{ matrix.config.host }}'
         TEST: '${{ matrix.config.test }}'
+        # Official Tier 1 mirror in Chicago. repo-default/repo-ci (Helsinki)
+        # refused connections in Nov 2026, and repo-us is disabled upstream.
+        MIRROR: https://mirrors.summithq.com/voidlinux
     strategy:
       fail-fast: false
       # Serialized: concurrent heavy builds (hyprland x2) exhaust the runner and
@@ -52,9 +55,7 @@ jobs:
       - name: Prepare container
         run: |
           mkdir -p /etc/xbps.d && cp /usr/share/xbps.d/*-repository-*.conf /etc/xbps.d/
-          # repo-ci and repo-default (Helsinki) refused connections in Nov 2026;
-          # the cross compiler step already used repo-fastly.
-          sed -i 's|repo-default|repo-fastly|g' /etc/xbps.d/*-repository-*.conf
+          sed -i "s|https://repo-default.voidlinux.org|$MIRROR|g" /etc/xbps.d/*-repository-*.conf
           # Persistent package cache, one dir per native arch (glibc vs musl).
           echo "cachedir=/void-cache/xbps/$(xbps-uhelper arch)" > /etc/xbps.d/00-cachedir.conf
           xbps-install -Syu xbps && xbps-install -yu && xbps-install -y sudo bash curl git git-lfs
@@ -568,14 +569,14 @@ jobs:
           rm -rf hostdir && ln -s /void-cache/hostdir hostdir
           echo XBPS_CCACHE=yes >> etc/conf
           chown -R builder:builder . /void-cache/hostdir &&
-          sudo -Eu builder sed -i 's:repo-default\.voidlinux\.org:repo-fastly.voidlinux.org:g' etc/xbps.d/repos-remote*.conf &&
+          sudo -Eu builder sed -i "s|https://repo-default.voidlinux.org|$MIRROR|g" etc/xbps.d/repos-remote*.conf &&
           sudo -Eu builder common/travis/prepare.sh &&
           common/travis/fetch-xtools.sh || exit 1
 
           # xbps-src only uses ccache when it is installed in the masterdir.
           case "$BOOTSTRAP" in
-              x86_64) repository=https://repo-fastly.voidlinux.org/current ;;
-              x86_64-musl) repository=https://repo-fastly.voidlinux.org/current/musl ;;
+              x86_64) repository=$MIRROR/current ;;
+              x86_64-musl) repository=$MIRROR/current/musl ;;
           esac
           sudo -Eu builder timeout 20m xbps-install \
               -c "$PWD/hostdir/repocache-$BOOTSTRAP" \
@@ -590,11 +591,11 @@ jobs:
           case "$BOOTSTRAP" in
               x86_64)
                   triplet=aarch64-linux-gnu
-                  repository=https://repo-fastly.voidlinux.org/current
+                  repository=$MIRROR/current
                   ;;
               x86_64-musl)
                   triplet=aarch64-linux-musl
-                  repository=https://repo-fastly.voidlinux.org/current/musl
+                  repository=$MIRROR/current/musl
                   ;;
           esac
           sudo -Eu builder timeout 20m xbps-install \
