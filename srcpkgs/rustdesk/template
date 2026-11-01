@@ -1,0 +1,45 @@
+# Template file for 'rustdesk'
+pkgname=rustdesk
+version=1.5.0
+revision=1
+archs="x86_64 aarch64"
+hostmakedepends="tar xz"
+depends="gtk+3 xdotool libXtst libva gst-plugins-base1 gstreamer1-pipewire
+ libpulseaudio libayatana-appindicator curl hicolor-icon-theme desktop-file-utils"
+short_desc="Open source remote desktop software"
+maintainer="Wizzard <rich@bandaholics.cash>"
+license="AGPL-3.0-only"
+homepage="https://rustdesk.com/"
+changelog="https://github.com/rustdesk/rustdesk/releases"
+# prebuilt flutter bundle, ships its own libs in /usr/share/rustdesk/lib (RUNPATH $ORIGIN/lib)
+ignore_elf_dirs="/usr/share/rustdesk"
+nostrip=yes
+case "${XBPS_TARGET_MACHINE}" in
+x86_64*)
+	_upstream_arch=x86_64
+	_checksum=4e2b9701d25a7ef373f3d09bda584a37d6902f97a6ab15f2e86d4a5783e2a0ec
+	;;
+aarch64*)
+	_upstream_arch=aarch64
+	_checksum=1f2fc9be8321c10347aa33cb13198c6a956aec272c5e58ac81f4c0ef04037df3
+	;;
+*)
+	broken="No distfiles available for this target"
+	;;
+esac
+
+distfiles="https://github.com/rustdesk/rustdesk/releases/download/${version}/rustdesk-${version}-${_upstream_arch}.deb"
+checksum="${_checksum}"
+
+do_extract() {
+	ar x "${XBPS_SRCDISTDIR}/${pkgname}-${version}/rustdesk-${version}-${_upstream_arch}.deb"
+	tar xf data.tar.xz -C "${wrksrc}"
+}
+
+do_install() {
+	vcopy usr "/"
+	ln -sf /usr/share/rustdesk/rustdesk "${DESTDIR}/usr/bin/rustdesk"
+	# systemd unit is useless on runit, use the sv service instead
+	rm -rf "${DESTDIR}/usr/share/rustdesk/files/systemd"
+	vsv rustdesk
+}
