@@ -531,6 +531,11 @@ jobs:
         if: ${{ steps.changed.outputs.pkgs != '' || steps.changed.outputs.removed != '' }}
         run: |
           echo "==> copying templates..."
+          # Replace whole dirs so upstream patches/ and files/ from an overridden
+          # Void package can't leak into ours (element-desktop broke on this).
+          for d in extra/srcpkgs/*; do
+              rm -rf "void-packages/srcpkgs/${d##*/}"
+          done
           cp -rv extra/srcpkgs/* void-packages/srcpkgs/
 
           SHLIBS_FILE="void-packages/common/shlibs"
