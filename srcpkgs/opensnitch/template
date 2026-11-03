@@ -1,0 +1,73 @@
+# Template file for 'opensnitch'
+pkgname=opensnitch
+version=1.8.0
+revision=1
+archs="x86_64 aarch64"
+hostmakedepends="tar xz"
+depends="libnetfilter_queue libnfnetlink python3 python3-pyqt6 python3-pyqt6-gui
+ python3-pyqt6-widgets python3-pyqt6-network python3-pyqt6-svg python3-pyqt6-devel-tools
+ python3-pyqt6-sql qt6-plugin-sqlite python3-grpcio python3-protobuf
+ python3-packaging python3-slugify python3-notify2 python3-requests hicolor-icon-theme
+ desktop-file-utils"
+short_desc="Interactive application firewall (daemon and GUI)"
+maintainer="Wizzard <rich@bandaholics.cash>"
+license="GPL-3.0-or-later"
+homepage="https://github.com/evilsocket/opensnitch"
+changelog="https://github.com/evilsocket/opensnitch/releases"
+conf_files="/etc/opensnitchd/default-config.json
+ /etc/opensnitchd/system-fw.json
+ /etc/opensnitchd/network_aliases.json
+ /etc/opensnitchd/tasks/tasks.json"
+pycompile_module="opensnitch"
+# prebuilt upstream debs; the eBPF objects are BPF ELF, not host code
+nostrip=yes
+ignore_elf_dirs="/usr/lib/opensnitchd"
+case "${XBPS_TARGET_MACHINE}" in
+x86_64)
+	_debarch=amd64
+	_checksum=9f517926877f07761ca95ec43dc9daefecac582574f9856079e1064be3fa1c8a
+	;;
+aarch64)
+	_debarch=arm64
+	_checksum=7d80a1f6649d7f132bf19f860823ce9df4bcc86d2a7547ec03381165f76dfb3a
+	;;
+*)
+	broken="upstream ships glibc debs for x86_64 and aarch64 only"
+	;;
+esac
+_ui_checksum=3597e6ae5eedbf706622cd64bddc9649acca165ac1f63a444585dfda5435003d
+_daemon_deb="opensnitch_${version}-1_${_debarch}.deb"
+_ui_deb="python3-opensnitch-ui_${version}-1_all.deb"
+
+distfiles="${homepage}/releases/download/v${version}/${_daemon_deb}
+ ${homepage}/releases/download/v${version}/${_ui_deb}"
+checksum="${_checksum} ${_ui_checksum}"
+
+do_extract() {
+	local f
+	mkdir -p "${wrksrc}"
+	for f in "${_daemon_deb}" "${_ui_deb}"; do
+		rm -f data.tar.xz control.tar.xz debian-binary
+		ar x "${XBPS_SRCDISTDIR}/${pkgname}-${version}/${f}"
+		tar xf data.tar.xz -C "${wrksrc}"
+	done
+}
+
+do_install() {
+	vbin usr/bin/opensnitchd
+	vmkdir usr/lib/opensnitchd
+	vcopy usr/lib/opensnitchd/ebpf usr/lib/opensnitchd
+	vmkdir etc
+	vcopy etc/opensnitchd etc
+	vinstall etc/logrotate.d/opensnitch 644 etc/logrotate.d
+	vsv opensnitchd
+
+	# Debian's dist-packages layout moved to Void's site-packages
+	vmkdir "${py3_sitelib}"
+	vcopy "usr/lib/python3/dist-packages/*" "${py3_sitelib}"
+	vbin usr/bin/opensnitch-ui
+	vmkdir usr/share
+	vcopy usr/share/applications usr/share
+	vcopy usr/share/icons usr/share
+	vcopy usr/share/metainfo usr/share
+}
