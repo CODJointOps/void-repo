@@ -18,6 +18,9 @@ jobs:
       - name: Sync templates from package repos
         env:
           ACCESS_GIT: ${{ secrets.ACCESS_GIT }}
+          ACCESS_GIT_USER: ${{ secrets.ACCESS_GIT_USER }}
+          REPO_OWNER: ${{ gitea.repository_owner }}
+          GIT_TERMINAL_PROMPT: '0'
         run: |
           set -e
           changed=false
@@ -185,7 +188,10 @@ jobs:
               fi
 
               tmpdir=$(mktemp -d)
-              if ! git clone --depth 1 "$repo_url" "$tmpdir"; then
+              # private package repos need the token; public ones clone anonymously
+              auth_url=$(printf '%s' "$repo_url" | sed "s#^https://#https://${ACCESS_GIT_USER:-$REPO_OWNER}:${ACCESS_GIT}@#")
+              if ! git clone --depth 1 "$repo_url" "$tmpdir" 2>/dev/null \
+                  && ! { rm -rf "$tmpdir" && mkdir -p "$tmpdir" && git clone --depth 1 "$auth_url" "$tmpdir"; }; then
                   mark_sync_failed "failed to clone $repo_url"
                   rm -rf "$tmpdir"
                   continue
