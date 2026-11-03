@@ -1,0 +1,6 @@
+hyprgraphics
+aquamarine
+xdg-desktop-portal-hyprland
+hyprpaper
+hyprlock
+hyprland
